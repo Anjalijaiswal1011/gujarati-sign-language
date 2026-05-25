@@ -1,0 +1,28 @@
+{
+  "model": "action_detection_cnn_lstm",
+  "input_shape": [
+    30,
+    84
+  ],
+  "num_classes": 10,
+  "classes": [
+    "dancing",
+    "drinking",
+    "eating",
+    "greeting",
+    "helping",
+    "jumping",
+    "running",
+    "sitting",
+    "standing",
+    "walking"
+  ],
+  "training_samples": 1680,
+  "validation_samples": 360,
+  "test_samples": 360,
+  "test_accuracy": 0.9416666626930237,
+  "test_loss": 0.20543350279331207,
+  "epochs_trained": 10,
+  "final_train_accuracy": 0.9857142567634583,
+  "final_val_accuracy": 0.5
+}

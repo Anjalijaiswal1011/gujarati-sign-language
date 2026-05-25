@@ -86,8 +86,4 @@ asl-alphabet.zip
 backend/dataset/raw_images/
 backend/dataset/sequences/
 backend/dataset/processed_data/
-backend/dataset/models/*.h5
-backend/dataset/models/*_progress.json
-backend/dataset/models/*_info.json
-backend/services/models/*.task
 test_extract/

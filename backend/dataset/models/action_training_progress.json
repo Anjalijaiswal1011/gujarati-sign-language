@@ -1,0 +1,1 @@
+{"status": "training", "epoch": 10, "total_epochs": 10, "loss": 0.06545353680849075, "accuracy": 0.9857142567634583, "val_loss": 1.510469675064087, "val_accuracy": 0.5, "message": "Epoch 10/10 | Loss: 0.0655 | Acc: 98.57% | Val Loss: 1.5105 | Val Acc: 50.00%"}
