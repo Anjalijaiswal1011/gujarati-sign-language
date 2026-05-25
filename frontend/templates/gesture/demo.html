@@ -311,6 +311,18 @@ body { background: var(--g-bg); }
                         </button>
                     </div>
                 </div>
+
+                <div style="margin-top: 1rem; border-top: 1px solid var(--g-border); padding-top: 1rem;">
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--g-muted); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Hand Tracking Source</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="g-btn g-btn-primary" id="source-client-btn" style="flex: 1; padding: 0.55rem; font-size: 0.8rem;" title="Run hand detection in your browser (faster)">
+                            <i class="fa-brands fa-chrome"></i> Browser (Fast)
+                        </button>
+                        <button class="g-btn g-btn-outline" id="source-server-btn" style="flex: 1; padding: 0.55rem; font-size: 0.8rem;" title="Run hand detection on the server (more stable)">
+                            <i class="fa-solid fa-cloud"></i> Server (Stable)
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Audio Settings -->
@@ -626,6 +638,7 @@ let lastWordDetected = '';
 let lastWordTime   = 0;
 let lastRegisteredLetter = '';
 let clientAlignmentError = '';
+let trackingSource = window.Hands ? 'client' : 'server';
 
 // Word builder state
 let currentWord      = '';     // English letters being typed
@@ -701,6 +714,33 @@ function setDetectionMode(mode) {
 modeAlphabetBtn.addEventListener('click', () => setDetectionMode('alphabet'));
 modeWordsBtn.addEventListener('click', () => setDetectionMode('words'));
 
+function setTrackingSource(source) {
+    trackingSource = source;
+    const clientBtn = document.getElementById('source-client-btn');
+    const serverBtn = document.getElementById('source-server-btn');
+    if (!clientBtn || !serverBtn) return;
+    
+    if (source === 'client') {
+        clientBtn.className = 'g-btn g-btn-primary';
+        serverBtn.className = 'g-btn g-btn-outline';
+        console.log('[Tracking] Switched to Client-side (Browser)');
+    } else {
+        clientBtn.className = 'g-btn g-btn-outline';
+        serverBtn.className = 'g-btn g-btn-primary';
+        console.log('[Tracking] Switched to Server-side (Cloud)');
+    }
+}
+
+const sourceClientBtn = document.getElementById('source-client-btn');
+const sourceServerBtn = document.getElementById('source-server-btn');
+if (sourceClientBtn) {
+    sourceClientBtn.addEventListener('click', () => setTrackingSource('client'));
+}
+if (sourceServerBtn) {
+    sourceServerBtn.addEventListener('click', () => setTrackingSource('server'));
+}
+setTrackingSource(trackingSource);
+
 function initSocket() {
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const port  = location.port ? `:${location.port}` : '';
@@ -735,8 +775,8 @@ let offscreenCtx = null;
 function getOffscreenCanvas() {
     if (!offscreenCanvas) {
         offscreenCanvas = document.createElement('canvas');
-        offscreenCanvas.width = 320;
-        offscreenCanvas.height = 240;
+        offscreenCanvas.width = 640;
+        offscreenCanvas.height = 480;
         offscreenCtx = offscreenCanvas.getContext('2d');
     }
     return { canvas: offscreenCanvas, ctx: offscreenCtx };
@@ -830,16 +870,18 @@ function stopDetection() {
 function sendFrame() {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
     
-    // If browser MediaPipe is available, always pass frames to it first to verify hand presence
-    if (useClientMediaPipe && mpHands) {
+    // If user explicitly selected server tracking, or client mediaPipe failed to initialize
+    const forceServer = (trackingSource === 'server') || !useClientMediaPipe || !mpHands;
+    
+    if (!forceServer) {
         canvas.width  = 320;
         canvas.height = 240;
         mpHands.send({ image: video });
     } else {
-        // Fallback: send raw base64 frame directly (backend will run face detection & skin contours)
+        // Explicit server tracking: send raw base64 frame directly
         const offscreen = getOffscreenCanvas();
         offscreen.ctx.drawImage(video, 0, 0, offscreen.canvas.width, offscreen.canvas.height);
-        const frame = offscreen.canvas.toDataURL('image/jpeg', 0.4);
+        const frame = offscreen.canvas.toDataURL('image/jpeg', 0.45);
         socket.send(JSON.stringify({type: 'frame', image: frame, mode: detectionMode, threshold: getConfThresh()}));
     }
 }
@@ -893,13 +935,17 @@ function handleClientMediaPipeResults(results) {
         } else {
             const offscreen = getOffscreenCanvas();
             offscreen.ctx.drawImage(video, 0, 0, offscreen.canvas.width, offscreen.canvas.height);
-            const frame = offscreen.canvas.toDataURL('image/jpeg', 0.4);
+            const frame = offscreen.canvas.toDataURL('image/jpeg', 0.45);
             socket.send(JSON.stringify({type: 'frame', image: frame, mode: detectionMode, has_hand: true, threshold: getConfThresh()}));
         }
     } else {
         clientAlignmentError = '';
-        // Gating logic: explicitly tell the backend that NO hand is present in the frame
-        socket.send(JSON.stringify({type: 'frame', landmarks: null, image: null, mode: detectionMode, status: 'no_hands', message: 'No hands detected'}));
+        // Fallback: if browser-side MediaPipe fails to find a hand, send the base64 frame to the server
+        // so the server's python MediaPipe task can run its own detection.
+        const offscreen = getOffscreenCanvas();
+        offscreen.ctx.drawImage(video, 0, 0, offscreen.canvas.width, offscreen.canvas.height);
+        const frame = offscreen.canvas.toDataURL('image/jpeg', 0.45);
+        socket.send(JSON.stringify({type: 'frame', image: frame, mode: detectionMode, threshold: getConfThresh()}));
     }
 }
 
