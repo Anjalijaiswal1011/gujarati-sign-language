@@ -87,3 +87,4 @@ backend/dataset/raw_images/
 backend/dataset/sequences/
 backend/dataset/processed_data/
 test_extract/
+screenshots/
