@@ -1,0 +1,196 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}User Dashboard | SignTranslate{% endblock %}
+
+{% block content %}
+<div class="dashboard-wrapper animate-fade-in" style="padding: 40px 0;">
+
+    <!-- 1. Top Welcome Section -->
+    <section class="welcome-section mb-4" style="background: white; padding: 40px; border-radius: 24px; box-shadow: var(--shadow-soft);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+            <div>
+                <h1 style="font-size: 2.5rem; margin-bottom: 8px;">Welcome back, {{ user.username }}! ✨</h1>
+                <p class="text-muted large-text">Your personal communication assistant is ready. How can we help you today?</p>
+            </div>
+            <div style="background: var(--pastel-lavender); padding: 15px 25px; border-radius: 12px; border: 1px solid rgba(139, 92, 246, 0.1);">
+                <span style="font-weight: 600; color: var(--primary-color);">System Status:</span> Live & Connected
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Activity Overview (Stats) -->
+    <div class="stats-grid mb-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 24px;">
+        <div class="stat-card" style="background: white; padding: 25px; border-radius: 20px; text-align: center; border-bottom: 4px solid var(--primary-color);">
+            <div style="color: var(--primary-color); font-size: 1.5rem; margin-bottom: 10px;"><i class="fa-solid fa-language"></i></div>
+            <h4 style="color: var(--text-light); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">Translations</h4>
+            <div style="font-size: 2rem; font-weight: 800;">{{ translation_count }}</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 25px; border-radius: 20px; text-align: center; border-bottom: 4px solid #10B981;">
+            <div style="color: #10B981; font-size: 1.5rem; margin-bottom: 10px;"><i class="fa-solid fa-hand-sparkles"></i></div>
+            <h4 style="color: var(--text-light); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">Gestures</h4>
+            <div style="font-size: 2rem; font-weight: 800;">{{ gesture_count }}</div>
+        </div>
+        <div class="stat-card" style="background: white; padding: 25px; border-radius: 20px; text-align: center; border-bottom: 4px solid #F59E0B;">
+            <div style="color: #F59E0B; font-size: 1.5rem; margin-bottom: 10px;"><i class="fa-solid fa-star"></i></div>
+            <h4 style="color: var(--text-light); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.05em;">Favorites</h4>
+            <div style="font-size: 2rem; font-weight: 800;">{{ favorites_count }}</div>
+        </div>
+    </div>
+
+    <!-- 3. Quick Action Cards -->
+    <h3 class="mb-4" style="font-size: 1.5rem; padding-left: 10px;">Quick Actions</h3>
+    <div class="features-grid mb-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px;">
+        
+        <a href="{% url 'translation' %}" class="action-card">
+            <div class="action-icon" style="background: #DBEAFE; color: #1E40AF;"><i class="fa-solid fa-microphone"></i></div>
+            <h4>Speak/Translate</h4>
+            <p>English to Gujarati</p>
+        </a>
+
+        <a href="{% url 'gesture' %}" class="action-card">
+            <div class="action-icon" style="background: #EDE9FE; color: #5B21B6;"><i class="fa-solid fa-camera"></i></div>
+            <h4>Live Hand Signs</h4>
+            <p>Detection Module</p>
+        </a>
+
+        <a href="{% url 'history' %}" class="action-card">
+            <div class="action-icon" style="background: #F3F4F6; color: #374151;"><i class="fa-solid fa-clock-rotate-left"></i></div>
+            <h4>Recent History</h4>
+            <p>View Activity Logs</p>
+        </a>
+
+        <a href="{% url 'favorites' %}" class="action-card">
+            <div class="action-icon" style="background: #FEF3C7; color: #92400E;"><i class="fa-solid fa-star"></i></div>
+            <h4>Favorite Phrases</h4>
+            <p>Saved Library</p>
+        </a>
+
+        <a href="{% url 'home' %}" class="action-card">
+            <div class="action-icon" style="background: #D1FAE5; color: #065F46;"><i class="fa-solid fa-circle-question"></i></div>
+            <h4>Help & Guide</h4>
+            <p>How it Works</p>
+        </a>
+
+        <a href="/admin/" class="action-card">
+            <div class="action-icon" style="background: #FEE2E2; color: #991B1B;"><i class="fa-solid fa-user-gear"></i></div>
+            <h4>Settings</h4>
+            <p>Account Config</p>
+        </a>
+    </div>
+
+    <!-- 4 & 5. Recent Activity and Usage Tips -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-top: 40px;">
+        
+        <!-- Recent Activity Section -->
+        <div class="card" style="background: white; padding: 30px; border-radius: 20px; box-shadow: var(--shadow-soft);">
+            <h3 style="margin-bottom: 20px;"><i class="fa-solid fa-list-ul"></i> Recent Activity</h3>
+            <div class="activity-list">
+                {% if recent_translations or recent_gestures %}
+                    {% for item in recent_translations %}
+                        <div class="activity-item" style="padding: 15px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #3b82f6;"><i class="fa-solid fa-language"></i></div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.95rem;">Translated to Gujarati</div>
+                                <div style="color: var(--text-light); font-size: 0.85rem;">"{{ item.english_text|truncatechars:30 }}"</div>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 0.75rem;">{{ item.created_at|timesince }} ago</div>
+                        </div>
+                    {% endfor %}
+                    {% for item in recent_gestures %}
+                        <div class="activity-item" style="padding: 15px 0; border-bottom: 1px solid #f1f5f9; display: flex; align-items: center; gap: 15px;">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: #f5f3ff; display: flex; align-items: center; justify-content: center; color: #8b5cf6;"><i class="fa-solid fa-hand"></i></div>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 600; font-size: 0.95rem;">Gesture Detected</div>
+                                <div style="color: var(--text-light); font-size: 0.85rem;">Sign: {{ item.detected_label }}</div>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 0.75rem;">{{ item.created_at|timesince }} ago</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No recent activity found. Start a translation or use the camera to begin!</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'history' %}" style="display: block; text-align: center; margin-top: 20px; font-weight: 600; color: var(--primary-color);">View All History</a>
+        </div>
+
+        <!-- Usage Tips Section -->
+        <div class="tips-section">
+            <div class="card" style="background: var(--pastel-lavender); padding: 30px; border-radius: 20px; border: 1px dashed var(--primary-color);">
+                <h3 style="margin-bottom: 15px; color: var(--primary-color);">💡 Pro Tips</h3>
+                <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 15px;">
+                    <li style="font-size: 0.95rem; color: var(--text-dark);">
+                        <strong>Webcam Logic:</strong> Use detection in good lighting for 99% accuracy.
+                    </li>
+                    <li style="font-size: 0.95rem; color: var(--text-dark);">
+                        <strong>Favorites:</strong> Save your "Pharmacy" or "Home" address for quick communication.
+                    </li>
+                    <li style="font-size: 0.95rem; color: var(--text-dark);">
+                        <strong>Voice Input:</strong> Speak clearly into the microphone for English translation.
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Special Gestures Guide Card -->
+            <div class="card" style="background: white; padding: 30px; border-radius: 20px; box-shadow: var(--shadow-soft); margin-top: 24px; border: 1px solid var(--border-color, #e2e8f0);">
+                <h3 style="margin-bottom: 12px; font-size: 1.15rem;"><i class="fa-solid fa-hand-pointer" style="color: var(--primary-color);"></i> Special Gestures</h3>
+                <p class="text-muted" style="font-size: 0.85rem; margin-bottom: 15px; line-height: 1.4;">Use these hand signs in the camera view to control spelling dynamically:</p>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; text-align: center;">
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <img src="{% static 'images/space_sign.jpg' %}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 6px;" alt="Space Gesture">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: var(--primary-color); display: block;">SPACE Sign</span>
+                    </div>
+                    <div style="background: #f8fafc; padding: 10px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                        <img src="{% static 'images/del_sign.jpg' %}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 6px;" alt="Delete Gesture">
+                        <span style="font-size: 0.75rem; font-weight: 700; color: #ef4444; display: block;">DELETE Sign</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+    .action-card {
+        background: white;
+        padding: 30px 20px;
+        border-radius: 20px;
+        text-decoration: none;
+        color: inherit;
+        text-align: center;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: var(--shadow-soft);
+        border: 1px solid transparent;
+    }
+    .action-card:hover {
+        transform: translateY(-8px);
+        box-shadow: var(--shadow-hover);
+        border-color: rgba(139, 92, 246, 0.2);
+    }
+    .action-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px;
+        font-size: 1.2rem;
+    }
+    .action-card h4 {
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+    }
+    .action-card p {
+        font-size: 0.85rem;
+        color: var(--text-light);
+    }
+
+    @media (max-width: 900px) {
+        .dashboard-wrapper > div {
+            grid-template-columns: 1fr !important;
+        }
+    }
+</style>
+{% endblock %}

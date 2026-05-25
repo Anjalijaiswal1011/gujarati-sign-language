@@ -1,0 +1,599 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Translation Hub | SignTranslate{% endblock %}
+
+{% block content %}
+<style>
+/* 
+   Translation Workspace - Premium Layout
+   Focus: Clarity, Flow, and Accessible Form Design
+*/
+
+:root {
+    --trans-primary: #8b5cf6;
+    --trans-primary-light: #f5f3ff;
+    --trans-bg: #f8fafc;
+    --trans-card: #ffffff;
+    --trans-border: #e2e8f0;
+    --trans-text: #1e293b;
+    --trans-muted: #64748b;
+    --trans-success: #10b981;
+    --trans-favorite: #f59e0b;
+}
+
+.translate-workspace {
+    padding: 2rem 0;
+}
+
+.translate-workspace-header {
+    margin-bottom: 2.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-content h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    background: linear-gradient(135deg, var(--trans-primary) 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.header-content p {
+    color: var(--trans-muted);
+    font-size: 1.1rem;
+    margin-top: 0.25rem;
+}
+
+.workspace-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+}
+
+.pane-card {
+    background: var(--trans-card);
+    border-radius: 24px;
+    padding: 2rem;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+    border: 1px solid var(--trans-border);
+}
+
+.pane-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+}
+
+.pane-title i {
+    color: var(--trans-primary);
+    font-size: 1.25rem;
+}
+
+.pane-title h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+/* Input Area Styling */
+.input-wrapper {
+    position: relative;
+    border: 2px solid var(--trans-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+.input-wrapper:focus-within {
+    border-color: var(--trans-primary);
+    background: white;
+    box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.1);
+}
+
+#english-input {
+    width: 100%;
+    min-height: 180px;
+    border: none;
+    background: transparent;
+    font-size: 1.25rem;
+    color: var(--trans-text);
+    resize: none;
+    outline: none;
+    font-family: inherit;
+}
+
+.input-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+}
+
+.char-count {
+    font-size: 0.85rem;
+    color: var(--trans-muted);
+}
+
+/* Output Area Styling */
+.output-display {
+    min-height: 180px;
+    background: var(--trans-primary-light);
+    border-radius: 16px;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    border: 2px dashed rgba(139, 92, 246, 0.2);
+    transition: all 0.3s ease;
+}
+
+.output-display.has-content {
+    background: white;
+    border-style: solid;
+    border-color: var(--trans-primary);
+}
+
+#gujarati-output {
+    font-size: 2.25rem;
+    font-weight: 800;
+    color: var(--trans-primary);
+    line-height: 1.4;
+}
+
+.output-placeholder {
+    color: var(--trans-muted);
+    font-style: italic;
+}
+
+/* Workspace Actions */
+.workspace-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+/* Specific Button Refinements */
+.btn-workspace {
+    padding: 1rem 1.75rem;
+    border-radius: 14px;
+    font-weight: 700;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    font-family: 'Outfit', sans-serif;
+}
+
+.btn-main {
+    background: linear-gradient(135deg, var(--trans-primary) 0%, #6366f1 100%);
+    color: white;
+    box-shadow: 0 10px 15px -3px rgba(139, 92, 246, 0.3);
+}
+
+.btn-main:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 20px 25px -5px rgba(139, 92, 246, 0.4);
+}
+
+.btn-voice {
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.btn-voice.listening {
+    background: #fee2e2;
+    color: #ef4444;
+    animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+.btn-save {
+    background: white;
+    border: 1px solid var(--trans-border);
+    color: var(--trans-text);
+}
+
+.btn-save:hover {
+    background: var(--trans-primary-light);
+    border-color: var(--trans-primary);
+    color: var(--trans-primary);
+}
+
+.btn-fav {
+    background: #fffbeb;
+    color: var(--trans-favorite);
+    border: 1px solid #fde68a;
+}
+
+.btn-fav:hover {
+    background: #fef3c7;
+    transform: translateY(-2px);
+}
+
+/* Animations */
+.fade-in-shimmer {
+    opacity: 0;
+    animation: fadeInShimmer 0.5s ease-out forwards;
+}
+
+@keyframes fadeInShimmer {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+    .workspace-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    
+    .translate-workspace-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+}
+</style>
+<section class="translate-workspace">
+    <header class="translate-workspace-header">
+        <div class="header-content">
+            <h1><i class="fa-solid fa-language"></i> Translation Workspace</h1>
+            <p id="header-subtitle">High-fidelity English to Gujarati neural translation</p>
+        </div>
+        <div class="workspace-meta">
+            <span class="badge" style="background: var(--trans-primary-light); color: var(--trans-primary); padding: 0.5rem 1rem; border-radius: 999px; font-weight: 700; font-size: 0.85rem;">
+                <i class="fa-solid fa-bolt"></i> AI Powered
+            </span>
+        </div>
+    </header>
+
+    <!-- Premium Language Selector Bar -->
+    <div class="lang-selector-bar" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 2rem; background: var(--trans-card); padding: 1rem; border-radius: 16px; border: 1px solid var(--trans-border); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); flex-wrap: wrap;">
+        <select id="source-lang-select" style="padding: 0.6rem 1.2rem; border-radius: 10px; border: 1px solid var(--trans-border); font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--trans-text); background: white; outline: none; cursor: pointer; min-width: 150px;">
+            <option value="en" selected>English</option>
+            <option value="gu">Gujarati</option>
+            <option value="hi">Hindi</option>
+            <option value="mr">Marathi</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="zh-CN">Chinese</option>
+            <option value="ja">Japanese</option>
+            <option value="ar">Arabic</option>
+        </select>
+        
+        <button id="swap-langs-btn" style="background: var(--trans-primary-light); color: var(--trans-primary); border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; font-size: 1.1rem; transition: all 0.2s;" title="Swap Languages">
+            <i class="fa-solid fa-arrow-right-arrow-left"></i>
+        </button>
+        
+        <select id="target-lang-select" style="padding: 0.6rem 1.2rem; border-radius: 10px; border: 1px solid var(--trans-border); font-family: inherit; font-size: 0.95rem; font-weight: 700; color: var(--trans-text); background: white; outline: none; cursor: pointer; min-width: 150px;">
+            <option value="en">English</option>
+            <option value="gu" selected>Gujarati</option>
+            <option value="hi">Hindi</option>
+            <option value="mr">Marathi</option>
+            <option value="es">Spanish</option>
+            <option value="fr">French</option>
+            <option value="de">German</option>
+            <option value="zh-CN">Chinese</option>
+            <option value="ja">Japanese</option>
+            <option value="ar">Arabic</option>
+        </select>
+    </div>
+
+    <div class="workspace-grid">
+        <!-- Left Pane: Input -->
+        <div class="pane-card">
+            <div class="pane-title">
+                <i class="fa-solid fa-keyboard"></i>
+                <h2 id="source-label">English Input</h2>
+            </div>
+            
+            <div class="input-wrapper">
+                <textarea id="english-input" placeholder="Type or speak your phrase..." aria-label="English text input"></textarea>
+                <div class="input-footer">
+                    <span class="char-count" id="char-count">0 characters</span>
+                    <button id="btn-voice" class="btn-workspace btn-voice" title="Start Speech Recognition">
+                        <i class="fa-solid fa-microphone"></i> <span>Speak</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="workspace-actions">
+                <button id="btn-translate" class="btn-workspace btn-main" style="width: 100%;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="translate-btn-text">Translate to Gujarati</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Pane: Output -->
+        <div class="pane-card">
+            <div class="pane-title">
+                <i class="fa-solid fa-comment-dots"></i>
+                <h2 id="target-label">Gujarati Translation</h2>
+            </div>
+
+            <div id="result-box" class="output-display">
+                <div id="gujarati-output" class="output-placeholder">
+                    Translation will appear here...
+                </div>
+            </div>
+
+            <div id="action-buttons" class="workspace-actions animate-fade-in hidden">
+                <button id="btn-speak-gj" class="btn-workspace btn-voice" style="flex: 1; background: #f0fdf4; border-color: #bbf7d0; color: #16a34a;">
+                    <i class="fa-solid fa-volume-high"></i> Listen
+                </button>
+                <button id="btn-save-history" class="btn-workspace btn-save" style="flex: 1;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> History
+                </button>
+                <button id="btn-save-fav" class="btn-workspace btn-fav" style="flex: 1;">
+                    <i class="fa-solid fa-star"></i> Favorite
+                </button>
+            </div>
+            
+            <div class="accessibility-note mt-4" style="background: #f8fafc; padding: 1rem; border-radius: 12px; font-size: 0.85rem; color: var(--trans-muted); border-left: 4px solid var(--trans-primary);">
+                <i class="fa-solid fa-circle-info"></i>
+                Tip: Use meaningful phrases for more accurate context-aware translation.
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const englishInput = document.getElementById('english-input');
+const gujaratiOutput = document.getElementById('gujarati-output');
+const resultBox = document.getElementById('result-box');
+const actionButtons = document.getElementById('action-buttons');
+const charCount = document.getElementById('char-count');
+const btnVoice = document.getElementById('btn-voice');
+const btnTranslate = document.getElementById('btn-translate');
+
+const sourceLangSelect = document.getElementById('source-lang-select');
+const targetLangSelect = document.getElementById('target-lang-select');
+const swapLangsBtn = document.getElementById('swap-langs-btn');
+const sourceLabel = document.getElementById('source-label');
+const targetLabel = document.getElementById('target-label');
+const translateBtnText = document.getElementById('translate-btn-text');
+const headerSubtitle = document.getElementById('header-subtitle');
+
+let SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function getBCP47LangCode(langCode) {
+    const map = {
+        'en': 'en-US',
+        'gu': 'gu-IN',
+        'hi': 'hi-IN',
+        'mr': 'mr-IN',
+        'es': 'es-ES',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'zh-CN': 'zh-CN',
+        'ja': 'ja-JP',
+        'ar': 'ar-SA'
+    };
+    return map[langCode] || langCode;
+}
+
+function updateLanguageUI() {
+    const sourceName = sourceLangSelect.options[sourceLangSelect.selectedIndex].text;
+    const targetName = targetLangSelect.options[targetLangSelect.selectedIndex].text;
+    sourceLabel.textContent = `${sourceName} Input`;
+    targetLabel.textContent = `${targetName} Translation`;
+    translateBtnText.textContent = `Translate to ${targetName}`;
+    englishInput.placeholder = `Type or speak your ${sourceName.toLowerCase()} phrase...`;
+    headerSubtitle.textContent = `High-fidelity ${sourceName} to ${targetName} neural translation`;
+    
+    if (!resultBox.classList.contains('has-content')) {
+        gujaratiOutput.innerHTML = `Translation will appear in ${targetName} here...`;
+    }
+}
+
+sourceLangSelect.addEventListener('change', updateLanguageUI);
+targetLangSelect.addEventListener('change', updateLanguageUI);
+
+swapLangsBtn.addEventListener('click', () => {
+    const temp = sourceLangSelect.value;
+    sourceLangSelect.value = targetLangSelect.value;
+    targetLangSelect.value = temp;
+    
+    const inputVal = englishInput.value.trim();
+    const outputVal = resultBox.classList.contains('has-content') ? gujaratiOutput.textContent.trim() : '';
+    
+    if (inputVal || outputVal) {
+        englishInput.value = outputVal;
+        gujaratiOutput.textContent = inputVal;
+        if (inputVal) {
+            resultBox.classList.add('has-content');
+            actionButtons.classList.remove('hidden');
+        } else {
+            resultBox.classList.remove('has-content');
+            actionButtons.classList.add('hidden');
+        }
+    }
+    updateLanguageUI();
+});
+
+// Initialize UI
+updateLanguageUI();
+
+// 0. UI Helper: Char Count
+englishInput.addEventListener('input', () => {
+    charCount.textContent = `${englishInput.value.length} characters`;
+});
+
+// 1. Voice Recognition Logic
+if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+
+    btnVoice.addEventListener('click', () => {
+        showToast(`Listening (${sourceLangSelect.options[sourceLangSelect.selectedIndex].text})... please speak.`);
+        recognition.lang = getBCP47LangCode(sourceLangSelect.value);
+        recognition.start();
+        btnVoice.classList.add('listening');
+        btnVoice.querySelector('span').textContent = "Listening...";
+    });
+
+    recognition.onresult = (event) => {
+        const text = event.results[0][0].transcript;
+        englishInput.value = text;
+        charCount.textContent = `${text.length} characters`;
+        showToast("Speech captured!");
+        btnVoice.classList.remove('listening');
+        btnVoice.querySelector('span').textContent = "Speak";
+        // Auto-translate on speech capture
+        btnTranslate.click();
+    };
+    
+    recognition.onerror = () => {
+        showToast("Microphone error.", true);
+        btnVoice.classList.remove('listening');
+        btnVoice.querySelector('span').textContent = "Speak";
+    };
+    
+    recognition.onend = () => {
+        btnVoice.classList.remove('listening');
+        btnVoice.querySelector('span').textContent = "Speak";
+    };
+} else {
+    btnVoice.style.display = 'none';
+}
+
+// 2. Translation API Call
+btnTranslate.addEventListener('click', async () => {
+    const text = englishInput.value.trim();
+    if (!text) {
+        showToast("Please enter or speak some text first.", true);
+        return;
+    }
+
+    // UI Loading State
+    btnTranslate.disabled = true;
+    const originalBtnText = btnTranslate.innerHTML;
+    btnTranslate.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    gujaratiOutput.innerHTML = '<span class="output-placeholder">Neural analysis in progress...</span>';
+    resultBox.classList.remove('has-content');
+
+    const { response, data } = await apiFetch('/api/translator/translate/', {
+        method: 'POST',
+        body: JSON.stringify({ 
+            text,
+            source_language: sourceLangSelect.value,
+            target_language: targetLangSelect.value
+        })
+    });
+
+    if (response.ok) {
+        gujaratiOutput.textContent = data.translated;
+        gujaratiOutput.classList.remove('output-placeholder');
+        resultBox.classList.add('has-content');
+        actionButtons.classList.remove('hidden');
+        
+        // Visual polish
+        gujaratiOutput.classList.add('fade-in-shimmer');
+        setTimeout(() => gujaratiOutput.classList.remove('fade-in-shimmer'), 500);
+    } else {
+        showToast("Translation failed", true);
+        gujaratiOutput.innerHTML = '<span style="color: var(--error);">Error during translation.</span>';
+    }
+    
+    btnTranslate.disabled = false;
+    btnTranslate.innerHTML = originalBtnText;
+});
+
+// 3. Save to History
+document.getElementById('btn-save-history').addEventListener('click', async () => {
+    const eng = englishInput.value;
+    const guj = gujaratiOutput.textContent;
+    
+    const { response } = await apiFetch('/api/history/list/', {
+        method: 'POST',
+        body: JSON.stringify({ english_text: eng, gujarati_text: guj, source_type: 'Text' })
+    });
+    
+    if (response.ok) showToast("Saved to history!");
+    else showToast("Failed to save history", true);
+});
+
+// 4. Save to Favorites
+document.getElementById('btn-save-fav').addEventListener('click', async () => {
+    const eng = englishInput.value;
+    const guj = gujaratiOutput.textContent;
+    
+    const { response } = await apiFetch('/api/history/favorites/', {
+        method: 'POST',
+        body: JSON.stringify({ english_text: eng, gujarati_text: guj })
+    });
+    
+    if (response.ok) showToast("Saved to favorites!");
+    else showToast("Failed to save favorite", true);
+});
+
+// 5. Speak/TTS Logic for Translation Output
+const btnSpeakGj = document.getElementById('btn-speak-gj');
+btnSpeakGj.addEventListener('click', async () => {
+    const text = gujaratiOutput.textContent.trim();
+    if (!text) return;
+    
+    btnSpeakGj.disabled = true;
+    const originalBtn = btnSpeakGj.innerHTML;
+    btnSpeakGj.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Playing...';
+    const targetLang = targetLangSelect.value;
+
+    const { response, data } = await apiFetch('/api/translator/voice/text-to-speech/', {
+        method: 'POST',
+        body: JSON.stringify({ text, language: targetLang })
+    });
+
+    if (response.ok && data.success && data.audio_base64) {
+        try {
+            const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+            await audio.play();
+            btnSpeakGj.disabled = false;
+            btnSpeakGj.innerHTML = originalBtn;
+            return;
+        } catch(e) {
+            console.error("Failed to play backend audio:", e);
+        }
+    }
+    
+    // Fallback to browser speechSynthesis
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const msg = new SpeechSynthesisUtterance(text);
+        msg.lang = getBCP47LangCode(targetLang);
+        msg.onend = () => {
+            btnSpeakGj.disabled = false;
+            btnSpeakGj.innerHTML = originalBtn;
+        };
+        msg.onerror = () => {
+            btnSpeakGj.disabled = false;
+            btnSpeakGj.innerHTML = originalBtn;
+        };
+        window.speechSynthesis.speak(msg);
+    } else {
+        btnSpeakGj.disabled = false;
+        btnSpeakGj.innerHTML = originalBtn;
+        showToast("Speech synthesis not supported.", true);
+    }
+});
+</script>
+{% endblock %}

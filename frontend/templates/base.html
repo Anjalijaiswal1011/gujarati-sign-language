@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Accessibility App{% endblock %}</title>
+    {% load static %}
+    
+    <!-- Google Fonts for typography WOW factor -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for robust premium icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Main Premium Styles -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="container nav-container">
+            <div class="logo">
+                <i class="fa-solid fa-hands-asl-interpreting"></i>
+                <a href="{% url 'home' %}">SignTranslate</a>
+            </div>
+            <div class="nav-links" id="nav-links">
+                <a href="{% url 'home' %}">Home</a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'dashboard' %}" id="nav-dashboard">Dashboard</a>
+                    <a href="{% url 'translation' %}">Translate</a>
+                    <a href="{% url 'gesture' %}">Gestures</a>
+                    <a href="{% url 'gesture-train' %}">Trainer</a>
+                    <form action="{% url 'logout' %}" method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <button type="submit" id="nav-logout" class="btn-link" style="background: none; border: none; color: var(--text-light); font-weight: 500; cursor: pointer; font-family: inherit; font-size: inherit;">Logout</button>
+                    </form>
+                {% else %}
+                    <a href="{% url 'login-page' %}" id="nav-login">Login</a>
+                    <a href="{% url 'register-page' %}" id="nav-register">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <div id="toast" class="toast hidden"></div>
+    
+    <main class="container">
+        {% block content %}{% endblock %}
+    </main>
+    
+    <footer class="footer">
+        <p>&copy; 2026 SignTranslate Accessibility Project. Built for everyone.</p>
+    </footer>
+
+    <!-- Custom Scripts -->
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    {% block scripts %}{% endblock %}
+    {% block extra_scripts %}{% endblock %}
+</body>
+
+</html>

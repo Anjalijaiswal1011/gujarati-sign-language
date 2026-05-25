@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+
+{% block title %}Translate | SignTranslate{% endblock %}
+
+{% block content %}
+<section class="translate-section" style="padding: 40px 0;">
+    <div class="container text-center">
+        <h2 class="section-title" id="page-title">English to Gujarati Translation</h2>
+        <p class="large-text" style="margin-bottom: 20px;">Type or speak your phrase below.</p>
+
+        <!-- Premium Language Selector Bar -->
+        <div class="lang-selector-bar" style="display: flex; justify-content: center; align-items: center; gap: 15px; margin-bottom: 30px; flex-wrap: wrap;">
+            <select id="source-lang-select" class="form-control" style="width: 160px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-weight: 600; cursor: pointer; outline: none; background: white;">
+                <option value="en" selected>English</option>
+                <option value="gu">Gujarati</option>
+                <option value="hi">Hindi</option>
+                <option value="mr">Marathi</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="zh-CN">Chinese</option>
+                <option value="ja">Japanese</option>
+                <option value="ar">Arabic</option>
+            </select>
+            
+            <button id="swap-langs-btn" class="btn" style="background: #e2e8f0; color: #4b5563; border-radius: 50%; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; border: none; cursor: pointer; transition: background 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" title="Swap Languages">⇄</button>
+            
+            <select id="target-lang-select" class="form-control" style="width: 160px; padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-weight: 600; cursor: pointer; outline: none; background: white;">
+                <option value="en">English</option>
+                <option value="gu" selected>Gujarati</option>
+                <option value="hi">Hindi</option>
+                <option value="mr">Marathi</option>
+                <option value="es">Spanish</option>
+                <option value="fr">French</option>
+                <option value="de">German</option>
+                <option value="zh-CN">Chinese</option>
+                <option value="ja">Japanese</option>
+                <option value="ar">Arabic</option>
+            </select>
+        </div>
+
+        <div class="translate-interface" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; text-align: left; width: 100%;" id="translate-grid">
+            
+            <!-- Input Area -->
+            <div class="card-pastel">
+                <h3 id="source-label" style="color: var(--secondary-color); margin-bottom: 15px;">English</h3>
+                <textarea id="english-input" class="form-control" rows="5" placeholder="Enter text here..." style="width: 100%; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 1.1rem; resize: none; margin-bottom: 20px;"></textarea>
+                
+                <div style="display: flex; gap: 15px;">
+                    <button id="translate-btn" class="btn btn-primary" style="flex: 1;">Translate</button>
+                    <!-- Browser Web Speech API fallback for Voice Input -->
+                    <button id="voice-btn" class="btn btn-secondary" style="background:#4B5563;" title="Use Voice Input">🎤 Speak</button>
+                </div>
+                <div id="voice-status" style="margin-top: 10px; font-size: 0.9rem; color: #4B5563;"></div>
+            </div>
+
+            <!-- Output Area -->
+            <div class="card-pastel" style="background: var(--light-blue);">
+                <h3 id="target-label" style="color: var(--secondary-color); margin-bottom: 15px;">Gujarati</h3>
+                <div id="gujarati-output" style="width: 100%; height: 130px; background: white; padding: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 1.3rem; margin-bottom: 20px; overflow-y: auto; color: var(--primary-color); font-weight: 500;">
+                    <span style="color:#aaa; font-size:1.1rem;">Translation will appear here...</span>
+                </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <button id="speak-btn" class="btn btn-outline" style="flex: 1; border-color: #10B981; color: #10B981;" disabled>🔊 Listen</button>
+                    <button id="copy-btn" class="btn btn-outline" style="flex: 1;" disabled>Copy Text</button>
+                    <button id="favorite-btn" class="btn btn-outline" style="flex: 1; border-color: #F59E0B; color: #F59E0B;" disabled>⭐ Favorite</button>
+                </div>
+                <div id="output-message" class="status-message" style="display:none; margin-top: 15px;"></div>
+            </div>
+
+        </div>
+    </div>
+</section>
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    const translateBtn = document.getElementById('translate-btn');
+    const voiceBtn = document.getElementById('voice-btn');
+    const englishInput = document.getElementById('english-input');
+    const gujaratiOutput = document.getElementById('gujarati-output');
+    const copyBtn = document.getElementById('copy-btn');
+    const favoriteBtn = document.getElementById('favorite-btn');
+    const speakBtn = document.getElementById('speak-btn');
+    const outputMessage = document.getElementById('output-message');
+    const voiceStatus = document.getElementById('voice-status');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    const sourceLangSelect = document.getElementById('source-lang-select');
+    const targetLangSelect = document.getElementById('target-lang-select');
+    const swapLangsBtn = document.getElementById('swap-langs-btn');
+    const sourceLabel = document.getElementById('source-label');
+    const targetLabel = document.getElementById('target-label');
+
+    let currentTranslation = "";
+
+    function getBCP47LangCode(langCode) {
+        const map = {
+            'en': 'en-US',
+            'gu': 'gu-IN',
+            'hi': 'hi-IN',
+            'mr': 'mr-IN',
+            'es': 'es-ES',
+            'fr': 'fr-FR',
+            'de': 'de-DE',
+            'zh-CN': 'zh-CN',
+            'ja': 'ja-JP',
+            'ar': 'ar-SA'
+        };
+        return map[langCode] || langCode;
+    }
+
+    function updateLanguageUI() {
+        const sourceName = sourceLangSelect.options[sourceLangSelect.selectedIndex].text;
+        const targetName = targetLangSelect.options[targetLangSelect.selectedIndex].text;
+        sourceLabel.textContent = sourceName;
+        targetLabel.textContent = targetName;
+        
+        englishInput.placeholder = `Enter ${sourceName} text here...`;
+        
+        if (!currentTranslation) {
+            gujaratiOutput.innerHTML = `<span style="color:#aaa; font-size:1.1rem;">Translation will appear in ${targetName} here...</span>`;
+        }
+        
+        document.getElementById('page-title').textContent = `${sourceName} to ${targetName} Translation`;
+    }
+
+    sourceLangSelect.addEventListener('change', updateLanguageUI);
+    targetLangSelect.addEventListener('change', updateLanguageUI);
+
+    swapLangsBtn.addEventListener('click', () => {
+        const temp = sourceLangSelect.value;
+        sourceLangSelect.value = targetLangSelect.value;
+        targetLangSelect.value = temp;
+        
+        const inputVal = englishInput.value.trim();
+        const outputVal = currentTranslation.trim();
+        
+        if (inputVal || outputVal) {
+            englishInput.value = outputVal;
+            gujaratiOutput.textContent = inputVal;
+            currentTranslation = inputVal;
+        }
+        updateLanguageUI();
+    });
+
+    // Initialize layout labels
+    updateLanguageUI();
+
+    // 1. Text Translation Logic
+    translateBtn.addEventListener('click', async () => {
+        const text = englishInput.value.trim();
+        if (!text) {
+            outputMessage.textContent = "Please enter some text first.";
+            outputMessage.style.color = "var(--error)";
+            outputMessage.style.display = "block";
+            return;
+        }
+
+        translateBtn.disabled = true;
+        translateBtn.textContent = "Translating...";
+        outputMessage.style.display = "none";
+        gujaratiOutput.innerHTML = '<span style="color:#666;">Translating...</span>';
+
+        try {
+            const response = await fetch('/api/translator/translate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ 
+                    text: text,
+                    source_language: sourceLangSelect.value,
+                    target_language: targetLangSelect.value
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                currentTranslation = data.translated;
+                gujaratiOutput.textContent = currentTranslation;
+                speakBtn.disabled = false;
+                copyBtn.disabled = false;
+                favoriteBtn.disabled = false;
+            } else {
+                gujaratiOutput.textContent = "";
+                outputMessage.textContent = data.error || "Translation failed.";
+                outputMessage.style.color = "var(--error)";
+                outputMessage.style.display = "block";
+            }
+        } catch (err) {
+            outputMessage.textContent = "API Error. Check backend.";
+            outputMessage.style.display = "block";
+        } finally {
+            translateBtn.disabled = false;
+            translateBtn.textContent = "Translate";
+        }
+    });
+
+    // 2. Browser Voice Input Logic (Speech Recognition)
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.interimResults = false;
+
+        voiceBtn.addEventListener('click', () => {
+            recognition.lang = getBCP47LangCode(sourceLangSelect.value);
+            recognition.start();
+            voiceStatus.textContent = `Listening (${sourceLangSelect.options[sourceLangSelect.selectedIndex].text})... please speak.`;
+            voiceBtn.style.background = "#EF4444";
+        });
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            englishInput.value = transcript;
+            voiceStatus.textContent = "Speech captured!";
+            voiceBtn.style.background = "#4B5563";
+            // Auto click translate
+            translateBtn.click();
+        };
+
+        recognition.onerror = (event) => {
+            voiceStatus.textContent = "Error: " + event.error;
+            voiceBtn.style.background = "#4B5563";
+        };
+
+        recognition.onend = () => {
+            voiceBtn.style.background = "#4B5563";
+        };
+    } else {
+        voiceBtn.style.display = 'none';
+        voiceStatus.textContent = "Voice input not supported in this browser.";
+    }
+
+    // 3. Copy to Clipboard
+    copyBtn.addEventListener('click', () => {
+        if (!currentTranslation) return;
+        navigator.clipboard.writeText(currentTranslation).then(() => {
+            copyBtn.textContent = "Copied!";
+            setTimeout(() => { copyBtn.textContent = "Copy Text"; }, 2000);
+        });
+    });
+
+    // 4. Speak/TTS Logic
+    speakBtn.addEventListener('click', async () => {
+        if (!currentTranslation) return;
+        
+        speakBtn.disabled = true;
+        const originalText = speakBtn.textContent;
+        speakBtn.textContent = "🔊 Playing...";
+        const targetLang = targetLangSelect.value;
+        
+        try {
+            const response = await fetch('/api/translator/voice/text-to-speech/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ text: currentTranslation, language: targetLang })
+            });
+            const data = await response.json();
+            if (response.ok && data.success && data.audio_base64) {
+                const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+                await audio.play();
+                speakBtn.disabled = false;
+                speakBtn.textContent = originalText;
+                return;
+            }
+        } catch (err) {
+            console.error("Backend TTS failed:", err);
+        }
+        
+        // Fallback
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(currentTranslation);
+            msg.lang = getBCP47LangCode(targetLang);
+            msg.onend = () => {
+                speakBtn.disabled = false;
+                speakBtn.textContent = originalText;
+            };
+            msg.onerror = () => {
+                speakBtn.disabled = false;
+                speakBtn.textContent = originalText;
+            };
+            window.speechSynthesis.speak(msg);
+        } else {
+            speakBtn.disabled = false;
+            speakBtn.textContent = originalText;
+        }
+    });
+
+</script>
+{% endblock %}

@@ -1,0 +1,1756 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Live Sign Translator | SignTranslate{% endblock %}
+
+{% block content %}
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Gujarati:wght@400;700&family=Outfit:wght@400;600;700;800;900&display=swap');
+
+:root {
+    --g-primary: #6366f1;
+    --g-violet: #8b5cf6;
+    --g-gj: #7c3aed;
+    --g-success: #10b981;
+    --g-error: #ef4444;
+    --g-warning: #f59e0b;
+    --g-bg: #f0f4ff;
+    --g-card: #ffffff;
+    --g-border: #e2e8f0;
+    --g-text: #0f172a;
+    --g-muted: #64748b;
+    --g-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.08), 0 4px 10px -6px rgb(0 0 0 / 0.08);
+    --g-radius: 20px;
+    --g-radius-sm: 12px;
+}
+
+body { background: var(--g-bg); }
+
+.gp-wrap { padding: 1.5rem 0 3rem; }
+
+/* === HEADER === */
+.gp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
+.gp-title { font-family: 'Outfit', sans-serif; font-size: 2rem; font-weight: 900; margin: 0;
+    background: linear-gradient(135deg, var(--g-primary), var(--g-violet)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.gp-subtitle { color: var(--g-muted); margin: 0.2rem 0 0; font-size: 0.95rem; }
+.status-pill { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1rem;
+    border-radius: 999px; font-size: 0.8rem; font-weight: 700; border: 1px solid transparent; transition: all 0.3s; }
+.status-pill.off { background: #fef2f2; color: var(--g-error); border-color: #fecaca; }
+.status-pill.on  { background: #f0fdf4; color: var(--g-success); border-color: #bbf7d0; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.status-pill.on .status-dot { animation: blink 1.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+/* === GRID === */
+.gp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+@media(max-width:1024px){ .gp-grid { grid-template-columns: 1fr; } }
+
+/* === CARD === */
+.gp-card { background: var(--g-card); border-radius: var(--g-radius); border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow); padding: 1.5rem; }
+.gp-card + .gp-card { margin-top: 1.25rem; }
+.card-head { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.25rem; }
+.card-head i { color: var(--g-primary); font-size: 1rem; }
+.card-head h2 { font-size: 1rem; font-weight: 700; margin: 0; flex: 1; }
+
+/* === CAMERA === */
+.cam-viewport { position: relative; background: #0a0a1a; border-radius: 14px;
+    aspect-ratio: 16/10; overflow: hidden; border: 2px solid #1e1e3a; }
+#webcam { width: 100%; height: 100%; object-fit: cover; display: none; }
+#canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; z-index: 5; background: transparent; display: none; }
+.cam-standby { position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; color: rgba(255,255,255,0.4); gap: 0.5rem; }
+.cam-standby i { font-size: 2rem; }
+.cam-standby.hidden { display: none; }
+.live-pill { position: absolute; top: 0.75rem; left: 0.75rem; display: none;
+    align-items: center; gap: 0.4rem; background: rgba(0,0,0,0.65); backdrop-filter: blur(8px);
+    color: white; padding: 0.3rem 0.7rem; border-radius: 999px; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; }
+.live-pill.show { display: flex; }
+.live-dot { width: 6px; height: 6px; background: #ef4444; border-radius: 50%; animation: live-anim 1.4s infinite; }
+@keyframes live-anim { 0%{transform:scale(0.95);box-shadow:0 0 0 0 rgba(239,68,68,0.7)} 70%{transform:scale(1);box-shadow:0 0 0 6px rgba(239,68,68,0)} 100%{transform:scale(0.95);box-shadow:0 0 0 0 rgba(239,68,68,0)} }
+
+/* Currently detecting letter */
+.current-letter-overlay { position: absolute; bottom: 0.75rem; right: 0.75rem;
+    background: rgba(0,0,0,0.75); backdrop-filter: blur(8px); color: white;
+    border-radius: 10px; padding: 0.35rem 0.85rem; font-family: 'Outfit', sans-serif;
+    font-size: 1rem; font-weight: 900; display: none; }
+.current-letter-overlay.show { display: block; }
+
+/* === CONTROLS === */
+.cam-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 1rem; }
+
+/* === BUTTONS === */
+.g-btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.75rem 1.2rem; border-radius: var(--g-radius-sm); font-family: 'Outfit', sans-serif;
+    font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+.g-btn-primary { background: linear-gradient(135deg, var(--g-primary), var(--g-violet)); color: white;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.35); }
+.g-btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(99,102,241,0.4); }
+.g-btn-outline { background: white; border-color: var(--g-border); color: var(--g-muted); }
+.g-btn-outline:hover:not(:disabled) { background: #eef2ff; border-color: var(--g-primary); color: var(--g-primary); }
+.g-btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; box-shadow: 0 4px 14px rgba(239,68,68,0.25); }
+.g-btn-danger:hover:not(:disabled) { transform: translateY(-2px); }
+.g-btn-success { background: linear-gradient(135deg, var(--g-success), #059669); color: white; box-shadow: 0 4px 14px rgba(16,185,129,0.3); }
+.g-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+/* === WORD BUILDER — The Main Feature === */
+.word-builder-card { border: 2px solid rgba(99,102,241,0.3); }
+
+/* Pending Detection Zone */
+.pending-zone { background: linear-gradient(135deg,#f0fdf4,#dcfce7); border: 2px solid #86efac;
+    border-radius: 14px; padding: 1rem; margin-bottom: 1rem; transition: all 0.3s; }
+.pending-zone.has-pending { background: linear-gradient(135deg,#fefce8,#fef08a);
+    border-color: #fbbf24; box-shadow: 0 0 20px rgba(251,191,36,0.3); }
+.pending-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.5rem; }
+.pending-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: var(--g-muted); }
+.pending-content { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+.pending-letters { display: flex; flex-direction: column; align-items: center; min-width: 60px; }
+.pending-en { font-family: 'Outfit',sans-serif; font-size: 2.8rem; font-weight: 900; color: var(--g-primary); line-height: 1; }
+.pending-gj { font-family: 'Noto Sans Gujarati',sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--g-gj); min-height: 2rem; }
+.pending-conf { flex: 1; }
+.add-btn-large { width: 100%; padding: 0.75rem; font-size: 0.95rem; font-weight: 800;
+    background: linear-gradient(135deg,#10b981,#059669); color: white; border-radius: 12px;
+    border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
+.add-btn-large:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(16,185,129,0.5); }
+.add-btn-large:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; background: #94a3b8; }
+
+/* Word display */
+.gj-word-live { font-family: 'Noto Sans Gujarati',sans-serif; font-size: 1.8rem; font-weight: 800;
+    color: var(--g-gj); text-align: center; min-height: 2.5rem; letter-spacing: 0.05em;
+    padding: 0.35rem; background: rgba(124,58,237,0.06); border-radius: 10px; margin-top: 0.3rem; }
+.gj-word-live:empty::before { content: '...'; opacity: 0.3; font-size: 1rem; }
+
+/* Matra Panel */
+.matra-panel { background: linear-gradient(135deg,#faf5ff,#ede9fe); border: 1.5px solid #c4b5fd;
+    border-radius: 12px; padding: 0.85rem; margin-bottom: 1rem; }
+.matra-panel-header { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.65rem;
+    font-size: 0.78rem; font-weight: 800; color: var(--g-gj); }
+.matra-panel-header small { font-size: 0.68rem; color: var(--g-muted); font-weight: 600; margin-left: auto; }
+.matra-buttons { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.matra-btn { display: flex; flex-direction: column; align-items: center; justify-content: center;
+    width: 46px; min-height: 48px; border-radius: 10px; cursor: pointer; transition: all 0.15s;
+    border: 1.5px solid #c4b5fd; background: white; color: var(--g-gj); font-family: 'Noto Sans Gujarati',sans-serif; }
+.matra-btn:hover { background: var(--g-gj); color: white; border-color: var(--g-gj); transform: scale(1.08); }
+.matra-btn .matra-char { font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
+.matra-btn .matra-name { font-size: 0.55rem; font-weight: 700; font-family: 'Outfit',sans-serif;
+    color: var(--g-muted); letter-spacing: 0.04em; margin-top: 1px; }
+.matra-btn:hover .matra-name { color: rgba(255,255,255,0.8); }
+
+/* Current word being spelled */
+.current-word-row { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; padding: 0.85rem 1rem;
+    background: #f8fafc; border-radius: 12px; border: 1px dashed var(--g-border); }
+.current-word-label { font-size: 0.75rem; font-weight: 700; color: var(--g-muted); text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+#current-word-display { font-family: 'Outfit', sans-serif; font-size: 1.5rem; font-weight: 900;
+    color: var(--g-primary); letter-spacing: 0.08em; flex: 1; }
+.blink-cursor { display: inline-block; width: 2px; height: 1.4rem; background: var(--g-primary);
+    vertical-align: middle; margin-left: 2px; animation: cursor-blink 1s infinite; }
+@keyframes cursor-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* Word action row */
+.word-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1rem; }
+
+/* Full sentence display */
+.sentence-display { background: white; border: 2px solid var(--g-border); border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem; min-height: 60px; }
+.sentence-meta { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--g-muted); margin-bottom: 0.5rem; }
+#sentence-en { font-family: 'Outfit', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--g-text); min-height: 2rem; }
+
+/* Gujarati output */
+.gujarati-box { background: linear-gradient(135deg, #faf5ff, #ede9fe); border: 2px solid #c4b5fd;
+    border-radius: 14px; padding: 1.25rem; margin-bottom: 1rem;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.12); }
+.gj-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.65rem; }
+.gj-badge { font-size: 0.78rem; font-weight: 800; background: var(--g-gj); color: white;
+    padding: 0.25rem 0.75rem; border-radius: 999px; letter-spacing: 0.05em; }
+.gj-live { display: flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; color: var(--g-muted); font-weight: 600; }
+.gj-pulse { width: 6px; height: 6px; background: var(--g-success); border-radius: 50%; animation: blink 1.5s infinite; }
+#sentence-gj { font-family: 'Noto Sans Gujarati', sans-serif; font-size: 1.8rem; font-weight: 700;
+    color: var(--g-gj); line-height: 1.6; min-height: 2.5rem; letter-spacing: 0.03em; }
+#sentence-gj:empty::before { content: 'ગુજરાતી અહીં દેખાશે…'; opacity: 0.4; font-size: 1rem; font-style: italic; }
+/* Live Gujarati typing preview */
+.gj-live-preview { font-family: 'Noto Sans Gujarati', sans-serif; font-size: 1.15rem;
+    color: var(--g-gj); background: rgba(124,58,237,0.08); border-radius: 8px;
+    padding: 0.4rem 0.75rem; margin-top: 0.5rem; min-height: 1.8rem; opacity: 0.75;
+    border: 1px dashed #c4b5fd; display: none; }
+.gj-live-preview.has-content { display: block; }
+/* Current detected letter in Gujarati */
+.gj-current-letter { font-family: 'Noto Sans Gujarati', sans-serif; font-size: 3.5rem;
+    font-weight: 900; color: var(--g-gj); text-align: center;
+    text-shadow: 0 2px 12px rgba(124,58,237,0.25); animation: gj-pop 0.2s ease-out; }
+@keyframes gj-pop { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* Sentence actions */
+.sentence-actions { display: flex; gap: 0.6rem; }
+
+/* Confidence mini bar */
+.conf-row { display: flex; align-items: center; gap: 0.75rem; }
+.conf-label { font-size: 0.75rem; color: var(--g-muted); font-weight: 700; white-space: nowrap; }
+.conf-track { flex: 1; height: 6px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
+#conf-fill { height: 100%; width: 0%; background: linear-gradient(to right, var(--g-primary), var(--g-violet));
+    border-radius: 999px; transition: width 0.4s cubic-bezier(0.34,1.56,0.64,1); }
+#conf-pct { font-size: 0.78rem; font-weight: 800; color: var(--g-primary); min-width: 34px; text-align: right; }
+
+/* Tips */
+.tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.tip-item { display: flex; align-items: flex-start; gap: 0.5rem; font-size: 0.8rem; color: var(--g-muted); padding: 0.5rem; background: #f8fafc; border-radius: 8px; }
+.tip-item i { color: var(--g-success); font-size: 0.75rem; margin-top: 2px; flex-shrink: 0; }
+
+/* Audio toggle */
+.audio-row { display: flex; align-items: center; justify-content: space-between; }
+.audio-info { display: flex; align-items: center; gap: 0.75rem; }
+.audio-icon { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--g-primary), var(--g-violet));
+    display: flex; align-items: center; justify-content: center; color: white; }
+.audio-title { font-size: 0.88rem; font-weight: 700; }
+.roi-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 170px;
+    height: 170px;
+    border: 2px dashed rgba(16, 185, 129, 0.45);
+    border-radius: 16px;
+    pointer-events: none;
+    display: none;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+.roi-box.show {
+    display: block;
+}
+.roi-label {
+    position: absolute;
+    bottom: -28px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    color: var(--g-success);
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 6px;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+.roi-bracket {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border: 3px solid var(--g-success);
+}
+.top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 8px; }
+.top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 8px; }
+.bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 8px; }
+.bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 8px; }
+</style>
+
+<div class="gp-wrap">
+    <!-- HEADER -->
+    <div class="gp-header">
+        <div>
+            <h1 class="gp-title"><i class="fa-solid fa-hands-asl-interpreting"></i> Real-Time Sign Translator</h1>
+            <p class="gp-subtitle">Sign letters with your hand → builds words → translates to Gujarati → speaks aloud</p>
+        </div>
+        <div id="status-pill" class="status-pill off">
+            <span class="status-dot"></span>
+            <span id="status-text">Disconnected</span>
+        </div>
+    </div>
+
+    <div class="gp-grid">
+        <!-- LEFT: Camera -->
+        <div>
+            <!-- Camera card -->
+            <div class="gp-card">
+                <div class="card-head">
+                    <i class="fa-solid fa-video"></i>
+                    <h2>Live Camera</h2>
+                    <span id="cam-status-text" style="margin-left:auto;font-size:0.75rem;color:var(--g-muted);">Click to enable camera</span>
+                </div>
+                <div class="cam-viewport" id="cam-viewport" style="cursor:pointer;" onclick="startCameraIfNeeded()">
+                    <div class="live-pill" id="live-pill"><span class="live-dot"></span>LIVE</div>
+                    <div class="cam-standby" id="cam-standby">
+                        <div style="background:rgba(99,102,241,0.9);border-radius:16px;padding:1.5rem 2rem;text-align:center;max-width:280px;">
+                            <i class="fa-solid fa-camera" style="font-size:2.5rem;color:white;margin-bottom:0.75rem;display:block;"></i>
+                            <p style="margin:0 0 0.5rem;font-size:1rem;font-weight:700;color:white;">Click here to start camera</p>
+                            <small style="color:rgba(255,255,255,0.8);font-size:0.8rem;">Allow camera permission when Chrome asks</small>
+                        </div>
+                    </div>
+                    <video id="webcam" autoplay playsinline muted></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    <div class="current-letter-overlay" id="letter-overlay"></div>
+                    
+                    <!-- Premium Glassmorphism ROI Box -->
+                    <div class="roi-box" id="roi-box">
+                        <div class="roi-bracket top-left"></div>
+                        <div class="roi-bracket top-right"></div>
+                        <div class="roi-bracket bottom-left"></div>
+                        <div class="roi-bracket bottom-right"></div>
+                        <div class="roi-label">PLACE HAND HERE</div>
+                    </div>
+                </div>
+                <div id="error-msg" style="font-size:0.85rem;margin-top:0.75rem;padding:0.75rem;border-radius:8px;display:none;"></div>
+
+                <div class="cam-controls" style="margin-top:1rem;">
+                    <button class="g-btn g-btn-outline" id="cam-btn">
+                        <i class="fa-solid fa-camera"></i> Start Camera
+                    </button>
+                    <button class="g-btn g-btn-primary" id="stream-btn" disabled>
+                        <i class="fa-solid fa-play"></i> Start Detection
+                    </button>
+                </div>
+
+                <div style="margin-top: 1rem; border-top: 1px solid var(--g-border); padding-top: 1rem;">
+                    <label style="font-size: 0.8rem; font-weight: 700; color: var(--g-muted); display: block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Detection Mode</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="g-btn g-btn-primary" id="mode-alphabet-btn" style="flex: 1; padding: 0.55rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-font"></i> Alphabet Spelling
+                        </button>
+                        <button class="g-btn g-btn-outline" id="mode-words-btn" style="flex: 1; padding: 0.55rem; font-size: 0.8rem;">
+                            <i class="fa-solid fa-tag"></i> Direct Words
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audio Settings -->
+            <div class="gp-card" style="padding:1.1rem 1.5rem;">
+                <div class="audio-row" style="margin-bottom: 0.75rem;">
+                    <div class="audio-info">
+                        <div class="audio-icon"><i class="fa-solid fa-volume-high"></i></div>
+                        <div>
+                            <div class="audio-title">Speech Synthesis</div>
+                            <div class="audio-sub">Play audio automatically after detection</div>
+                        </div>
+                    </div>
+                    <button class="g-btn g-btn-outline" id="speak-btn" style="background:#f0fdf4;border-color:#bbf7d0;color:var(--g-success);">
+                        <i class="fa-solid fa-volume-high"></i> On
+                    </button>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid var(--g-border);padding-top:0.75rem;margin-top:0.5rem;gap:1rem;">
+                    <span style="font-size:0.85rem;font-weight:700;color:var(--g-muted);"><i class="fa-solid fa-earth-asia"></i> Speak Language</span>
+                    <select id="voice-lang-select" style="padding:0.4rem 0.8rem;font-family:'Outfit',sans-serif;font-size:0.85rem;font-weight:600;border:1px solid var(--g-border);border-radius:8px;background:white;color:var(--g-text);outline:none;cursor:pointer;min-width:140px;">
+                        <option value="gu" selected>Gujarati Only</option>
+                        <option value="en">English Only</option>
+                        <option value="both">Both (Seq)</option>
+                    </select>
+                </div>
+                <div style="border-top:1px solid var(--g-border);padding-top:0.75rem;margin-top:0.75rem;">
+                    <div style="display:flex;flex-direction:column;gap:0.6rem;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:0.8rem;font-weight:700;color:var(--g-muted);"><i class="fa-solid fa-volume-low"></i> Volume</span>
+                            <div style="display:flex;align-items:center;gap:0.5rem;width:60%;">
+                                <input type="range" id="voice-volume" min="0" max="1" step="0.1" value="1.0" style="flex:1;accent-color:var(--g-primary);">
+                                <span id="volume-val" style="font-size:0.75rem;font-weight:800;color:var(--g-primary);min-width:24px;">1.0</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:0.8rem;font-weight:700;color:var(--g-muted);"><i class="fa-solid fa-gauge-high"></i> Speed Rate</span>
+                            <div style="display:flex;align-items:center;gap:0.5rem;width:60%;">
+                                <input type="range" id="voice-rate" min="0.5" max="2" step="0.1" value="1.0" style="flex:1;accent-color:var(--g-primary);">
+                                <span id="rate-val" style="font-size:0.75rem;font-weight:800;color:var(--g-primary);min-width:24px;">1.0</span>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <span style="font-size:0.8rem;font-weight:700;color:var(--g-muted);"><i class="fa-solid fa-circle-check"></i> Min Confidence</span>
+                            <div style="display:flex;align-items:center;gap:0.5rem;width:60%;">
+                                <input type="range" id="voice-threshold" min="20" max="90" step="5" value="60" style="flex:1;accent-color:var(--g-primary);">
+                                <span id="threshold-val" style="font-size:0.75rem;font-weight:800;color:var(--g-primary);min-width:24px;">60%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="gp-card" style="padding:1.1rem 1.5rem;">
+                <div class="card-head"><i class="fa-solid fa-lightbulb"></i><h2>How to Use</h2></div>
+                <div class="tips-grid">
+                    <div class="tip-item"><i class="fa-solid fa-circle-check"></i>Sign letters A-Z one at a time to spell words</div>
+                    <div class="tip-item"><i class="fa-solid fa-circle-check"></i>Hold each sign steady for ~0.5s to register</div>
+                    <div class="tip-item"><i class="fa-solid fa-circle-check"></i>Sign "SPACE" to add a space between words</div>
+                    <div class="tip-item"><i class="fa-solid fa-circle-check"></i>Sign "DEL" to delete the last letter</div>
+                    <div class="tip-item"><i class="fa-solid fa-circle-check"></i>Use plain background & good lighting</div>
+                    <div class="tip-item"><i class="fa-solid fa-circle-check"></i>Keep hand centered in the camera frame</div>
+                </div>
+            </div>
+
+            <!-- Special Gestures Guide -->
+            <div class="gp-card" style="padding:1.1rem 1.5rem;">
+                <div class="card-head"><i class="fa-solid fa-hand-pointer"></i><h2>Special Gestures Guide</h2></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; text-align: center;">
+                    <div style="background: #f8fafc; padding: 0.75rem; border-radius: 12px; border: 2px solid #fecaca;">
+                        <img src="{% static 'images/del_sign.jpg' %}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;" alt="Delete Gesture">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: var(--g-error); display:block;">DELETE</span>
+                        <span style="font-size: 0.72rem; color: var(--g-muted);">Fingers curled/pinched upward</span>
+                    </div>
+                    <div style="background: #f8fafc; padding: 0.75rem; border-radius: 12px; border: 2px solid #bbf7d0;">
+                        <img src="{% static 'images/space_sign.jpg' %}" style="width: 100%; height: 110px; object-fit: cover; border-radius: 8px; margin-bottom: 0.5rem;" alt="Space Gesture">
+                        <span style="font-size: 0.85rem; font-weight: 800; color: var(--g-success); display:block;">SPACE</span>
+                        <span style="font-size: 0.72rem; color: var(--g-muted);">Open flat palm, fingers spread</span>
+                    </div>
+                </div>
+                <div style="margin-top:0.75rem;padding:0.6rem 0.75rem;background:#eef2ff;border-radius:10px;font-size:0.78rem;color:var(--g-primary);font-weight:600;">
+                    <i class="fa-solid fa-circle-info"></i> Hold gesture steady for ~0.5s until "CONFIRMED" appears
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Word Builder & Translation -->
+        <div>
+            <!-- Word Builder -->
+            <div class="gp-card word-builder-card">
+                <div class="card-head">
+                    <i class="fa-solid fa-spell-check"></i>
+                    <h2>Word Builder</h2>
+                    <span id="wb-mode-badge" style="font-size:0.75rem;font-weight:700;background:linear-gradient(135deg,var(--g-primary),var(--g-violet));color:white;padding:0.2rem 0.6rem;border-radius:999px;">LIVE</span>
+                </div>
+
+                <!-- PENDING DETECTION ZONE -->
+                <div id="pending-zone" class="pending-zone">
+                    <div class="pending-header">
+                        <span class="pending-label"><i class="fa-solid fa-eye"></i> Currently Detected</span>
+                        <span id="stabilization-badge" style="font-size:0.65rem;font-weight:800;background:var(--g-warning);color:white;padding:0.15rem 0.5rem;border-radius:6px;display:none;text-transform:uppercase;">STABILIZING 0%</span>
+                    </div>
+                    <div class="pending-content">
+                        <div class="pending-letters">
+                            <span id="pending-letter-en" class="pending-en">—</span>
+                            <span id="pending-letter-gj" class="pending-gj"></span>
+                        </div>
+                        <div class="pending-conf">
+                            <div class="conf-track"><div id="conf-fill"></div></div>
+                            <div style="display:flex;justify-content:space-between;margin-top:0.3rem;">
+                                <span class="conf-label">Confidence</span>
+                                <span id="conf-pct">0%</span>
+                            </div>
+                            <div id="guidance-msg" style="font-size:0.75rem;font-weight:700;color:var(--g-muted);margin-top:0.4rem;padding:0.3rem 0.5rem;background:white;border-radius:6px;border:1px dashed var(--g-border);min-height:1.5rem;display:flex;align-items:center;">
+                                <i class="fa-solid fa-hand-pointer" style="margin-right:0.4rem;color:var(--g-primary);"></i> Place hand in guide box
+                            </div>
+                        </div>
+                    </div>
+                    <!-- BIG ADD BUTTON -->
+                    <button id="add-pending-btn" class="add-btn-large" disabled>
+                        <i class="fa-solid fa-plus"></i> Add This Letter to Word
+                    </button>
+                </div>
+
+                <!-- CURRENT WORD BEING BUILT -->
+                <div class="current-word-row" style="flex-direction:column;align-items:flex-start;gap:0.6rem;background:#f8fafc;padding:0.85rem 1rem;border-radius:12px;border:1px dashed var(--g-border);">
+                    <div style="display:flex;align-items:center;gap:0.5rem;width:100%;">
+                        <span class="current-word-label" style="font-size:0.75rem;font-weight:700;color:var(--g-muted);text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;min-width:65px;">Spelling</span>
+                        <input type="text" id="current-word-input" style="flex:1;font-family:'Outfit', sans-serif;font-size:1.4rem;font-weight:900;color:var(--g-primary);letter-spacing:0.08em;background:white;border:1px solid var(--g-border);border-radius:8px;padding:0.3rem 0.6rem;outline:none;" placeholder="Spelling..." />
+                    </div>
+                    <div style="display:flex;align-items:center;gap:0.5rem;width:100%;">
+                        <span class="current-word-label" style="font-size:0.75rem;font-weight:700;color:var(--g-muted);text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;min-width:65px;">Gujarati</span>
+                        <input type="text" id="gj-word-input" style="flex:1;font-family:'Noto Sans Gujarati', sans-serif;font-size:1.4rem;font-weight:800;color:var(--g-gj);background:white;border:1px solid var(--g-border);border-radius:8px;padding:0.3rem 0.6rem;outline:none;" placeholder="ગુજરાતી..." />
+                    </div>
+                </div>
+
+                <!-- GUJARATI VOWEL SIGNS (MATRAS) PANEL -->
+                <div class="matra-panel">
+                    <div class="matra-panel-header">
+                        <i class="fa-solid fa-language"></i>
+                        <span>Gujarati Vowel Signs (Matras)</span>
+                        <small>Click after a consonant to combine</small>
+                    </div>
+                    <div class="matra-buttons">
+                        <button class="matra-btn" data-matra="ા" title="aa (long a)"><span class="matra-char">ા</span><span class="matra-name">aa</span></button>
+                        <button class="matra-btn" data-matra="િ" title="i (short)"><span class="matra-char">િ</span><span class="matra-name">i</span></button>
+                        <button class="matra-btn" data-matra="ી" title="ii (long)"><span class="matra-char">ી</span><span class="matra-name">ii</span></button>
+                        <button class="matra-btn" data-matra="ુ" title="u (short)"><span class="matra-char">ુ</span><span class="matra-name">u</span></button>
+                        <button class="matra-btn" data-matra="ૂ" title="uu (long)"><span class="matra-char">ૂ</span><span class="matra-name">uu</span></button>
+                        <button class="matra-btn" data-matra="ૃ" title="ru"><span class="matra-char">ૃ</span><span class="matra-name">ru</span></button>
+                        <button class="matra-btn" data-matra="ે" title="e"><span class="matra-char">ે</span><span class="matra-name">e</span></button>
+                        <button class="matra-btn" data-matra="ૈ" title="ai"><span class="matra-char">ૈ</span><span class="matra-name">ai</span></button>
+                        <button class="matra-btn" data-matra="ો" title="o"><span class="matra-char">ો</span><span class="matra-name">o</span></button>
+                        <button class="matra-btn" data-matra="ૌ" title="au"><span class="matra-char">ૌ</span><span class="matra-name">au</span></button>
+                        <button class="matra-btn" data-matra="ં" title="nasal (anusvara)"><span class="matra-char">ં</span><span class="matra-name">ṁ</span></button>
+                        <button class="matra-btn" data-matra="ઃ" title="visarga"><span class="matra-char">ઃ</span><span class="matra-name">ḥ</span></button>
+                        <button class="matra-btn" data-matra="્" title="halant (join consonants)"><span class="matra-char">્</span><span class="matra-name">hal</span></button>
+                        <button class="matra-btn" data-matra="ઁ" title="chandrabindu"><span class="matra-char">ઁ</span><span class="matra-name">ñ</span></button>
+                    </div>
+                </div>
+
+                <!-- ENGLISH VOWELS PANEL -->
+                <div class="matra-panel" style="background: linear-gradient(135deg, #eff6ff, #dbeafe); border-color: #bfdbfe;">
+                    <div class="matra-panel-header" style="color: #1d4ed8;">
+                        <i class="fa-solid fa-font"></i>
+                        <span>English Vowels</span>
+                        <small>Click to add vowel to word</small>
+                    </div>
+                    <div class="matra-buttons">
+                        <button class="vowel-btn" data-vowel="A" title="A"><span class="matra-char">A</span><span class="matra-name" style="color: #1e40af;">અ</span></button>
+                        <button class="vowel-btn" data-vowel="E" title="E"><span class="matra-char">E</span><span class="matra-name" style="color: #1e40af;">ઇ</span></button>
+                        <button class="vowel-btn" data-vowel="I" title="I"><span class="matra-char">I</span><span class="matra-name" style="color: #1e40af;">ઈ</span></button>
+                        <button class="vowel-btn" data-vowel="O" title="O"><span class="matra-char">O</span><span class="matra-name" style="color: #1e40af;">ઓ</span></button>
+                        <button class="vowel-btn" data-vowel="U" title="U"><span class="matra-char">U</span><span class="matra-name" style="color: #1e40af;">ઉ</span></button>
+                    </div>
+                </div>
+
+                <!-- Word actions -->
+                <div class="word-actions">
+                    <button class="g-btn g-btn-success" id="add-word-btn" style="flex:1;" title="Add word to sentence">
+                        <i class="fa-solid fa-arrow-right"></i> Add Word
+                    </button>
+                    <button class="g-btn g-btn-outline" id="del-letter-btn" title="Delete last letter/matra">
+                        <i class="fa-solid fa-delete-left"></i> Del
+                    </button>
+                    <button class="g-btn g-btn-outline" id="clear-word-btn" style="color:var(--g-error);border-color:#fecaca;" title="Clear current word">
+                        <i class="fa-solid fa-xmark"></i> Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Full Sentence & Translation -->
+            <div class="gp-card">
+                <div class="card-head">
+                    <i class="fa-solid fa-language"></i>
+                    <h2>Sentence & Translation</h2>
+                </div>
+
+                <!-- English sentence -->
+                <div class="sentence-display">
+                    <div class="sentence-meta">English (Signed Words)</div>
+                    <div id="sentence-en" style="color:var(--g-text);">Sign letters to build words...</div>
+                </div>
+
+                <!-- Gujarati -->
+                <div class="gujarati-box">
+                    <div class="gj-meta">
+                        <span class="gj-badge">ગુ Gujarati</span>
+                        <span class="gj-live"><span class="gj-pulse"></span>Live Auto-Translate</span>
+                    </div>
+                    <div id="sentence-gj"></div>
+                    <!-- Live preview of word being typed -->
+                    <div id="gj-live-preview" class="gj-live-preview" title="Current word being typed in Gujarati"></div>
+                </div>
+
+                <!-- Sentence actions -->
+                <div class="sentence-actions" style="display: flex; flex-wrap: wrap; gap: 0.6rem;">
+                    <button class="g-btn g-btn-primary" id="speak-sentence-btn" style="flex:1; min-width: 130px;">
+                        <i class="fa-solid fa-volume-high"></i> Speak Gujarati
+                    </button>
+                    <button class="g-btn g-btn-primary" id="speak-sentence-en-btn" style="flex:1; min-width: 130px; background: linear-gradient(135deg, var(--g-primary), var(--g-violet));">
+                        <i class="fa-solid fa-volume-high"></i> Speak English
+                    </button>
+                    <button class="g-btn g-btn-outline" id="recalibrate-btn" title="Recalibrate WebSockets and Reset State" style="color:var(--g-violet);border-color:#ddd6fe; flex:1; min-width:100px;">
+                        <i class="fa-solid fa-arrows-rotate"></i> Recalibrate
+                    </button>
+                    <button class="g-btn g-btn-outline" id="clear-sentence-btn" style="color:var(--g-error);border-color:#fecaca; flex:1; min-width:100px;">
+                        <i class="fa-solid fa-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Recognition Log -->
+            <div class="gp-card">
+                <div class="card-head">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <h2>Recognition Log</h2>
+                    <span id="log-badge" style="margin-left:auto;background:#eef2ff;color:var(--g-primary);font-size:0.72rem;font-weight:800;padding:0.15rem 0.6rem;border-radius:999px;">0</span>
+                </div>
+                <div id="log-empty" style="text-align:center;padding:1.5rem;color:var(--g-muted);font-size:0.88rem;">
+                    <i class="fa-solid fa-hands-asl-interpreting" style="font-size:1.5rem;color:#c4b5fd;display:block;margin-bottom:0.5rem;"></i>
+                    Start detection to see log
+                </div>
+                <ul id="log-list" style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0.4rem;"></ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{% csrf_token %}
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const video        = document.getElementById('webcam');
+const canvas       = document.getElementById('canvas');
+const ctx          = canvas.getContext('2d');
+const camBtn       = document.getElementById('cam-btn');
+const streamBtn    = document.getElementById('stream-btn');
+const statusPill   = document.getElementById('status-pill');
+const statusText   = document.getElementById('status-text');
+const livePill     = document.getElementById('live-pill');
+const camStandby   = document.getElementById('cam-standby');
+const errorMsg     = document.getElementById('error-msg');
+const camStatusText= document.getElementById('cam-status-text');
+const speakBtn     = document.getElementById('speak-btn');
+const letterOverlay = document.getElementById('letter-overlay');
+const guidanceMsg  = document.getElementById('guidance-msg');
+
+// Word builder
+const currentLetterBig   = document.getElementById('pending-letter-en');
+const currentLetterGj    = document.getElementById('pending-letter-gj');
+const gjLivePreview      = document.getElementById('gj-live-preview');
+const confFill           = document.getElementById('conf-fill');
+const confPct            = document.getElementById('conf-pct');
+const currentWordInput   = document.getElementById('current-word-input');
+const gjWordInput        = document.getElementById('gj-word-input');
+const sentenceEn         = document.getElementById('sentence-en');
+const sentenceGj         = document.getElementById('sentence-gj');
+const addWordBtn         = document.getElementById('add-word-btn');
+const delLetterBtn       = document.getElementById('del-letter-btn');
+const clearWordBtn       = document.getElementById('clear-word-btn');
+const speakSentenceBtn   = document.getElementById('speak-sentence-btn');
+const clearSentenceBtn   = document.getElementById('clear-sentence-btn');
+const recalibrateBtn     = document.getElementById('recalibrate-btn');
+const stabilizationBadge = document.getElementById('stabilization-badge');
+const logEmpty           = document.getElementById('log-empty');
+const logList            = document.getElementById('log-list');
+const logBadge           = document.getElementById('log-badge');
+
+currentWordInput.addEventListener('input', syncStateFromInputs);
+gjWordInput.addEventListener('input', syncStateFromInputs);
+
+// Mode toggle buttons
+const modeAlphabetBtn = document.getElementById('mode-alphabet-btn');
+const modeWordsBtn = document.getElementById('mode-words-btn');
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let socket         = null;
+let camActive      = false;
+let detecting      = false;
+let audioEnabled   = true;
+let frameInterval  = null;
+let logCount       = 0;
+
+// Detection Mode state
+let detectionMode  = 'alphabet';
+let serverAlphabetModelType = 'landmarks'; // auto-configured by backend init message
+let lastWordDetected = '';
+let lastWordTime   = 0;
+let lastRegisteredLetter = '';
+let clientAlignmentError = '';
+
+// Word builder state
+let currentWord      = '';     // English letters being typed
+let currentGjWord    = '';     // Gujarati version of currentWord (with matras)
+let isGjManuallyEdited = false;
+let sentence         = [];     // Array of English words
+let sentenceGjWords  = [];     // Parallel Gujarati words array
+let pendingLetter    = '';     // Detected letter not yet added by user
+let pendingGujarati  = '';     // Gujarati of pendingLetter
+let lastLabel        = '';
+let lastLabelTime    = 0;
+const HOLD_MS        = 600;
+const FRAME_MS       = 150;
+const CONF_THRESH    = 60;
+
+// Stabilization state
+let stabilizingLabel = '';
+let stabilizationFrames = 0;
+// Dynamic constants based on mode
+function getRequiredFrames() { return detectionMode === 'words' ? 3 : 5; }
+function getConfThresh() {
+    const slider = document.getElementById('voice-threshold');
+    return slider ? parseFloat(slider.value) : (detectionMode === 'words' ? 45 : 60);
+}
+
+// MediaPipe client-side state
+let mpHands = null;
+let useClientMediaPipe = false;
+
+if (window.Hands) {
+    try {
+        mpHands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+        
+        mpHands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+        
+        mpHands.onResults((results) => {
+            handleClientMediaPipeResults(results);
+        });
+        
+        useClientMediaPipe = true;
+        console.log('[MediaPipe] Client-side tracking active.');
+    } catch(e) {
+        console.error('[MediaPipe] Init error:', e);
+    }
+}
+
+function setDetectionMode(mode) {
+    detectionMode = mode;
+    lastLabel = '';
+    lastWordDetected = '';
+    lastSpokenText = '';  // reset so first detection in new mode always speaks
+    
+    if (mode === 'alphabet') {
+        modeAlphabetBtn.className = 'g-btn g-btn-primary';
+        modeWordsBtn.className = 'g-btn g-btn-outline';
+        document.querySelector('.word-builder-card h2').textContent = 'Word Builder (Spelling)';
+        document.querySelector('.word-builder-card .card-head span').textContent = 'SPELLING';
+    } else {
+        modeAlphabetBtn.className = 'g-btn g-btn-outline';
+        modeWordsBtn.className = 'g-btn g-btn-primary';
+        document.querySelector('.word-builder-card h2').textContent = 'Word Builder (Direct Words)';
+        document.querySelector('.word-builder-card .card-head span').textContent = 'DIRECT WORDS';
+    }
+}
+
+modeAlphabetBtn.addEventListener('click', () => setDetectionMode('alphabet'));
+modeWordsBtn.addEventListener('click', () => setDetectionMode('words'));
+
+function initSocket() {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const port  = location.port ? `:${location.port}` : '';
+    const wsUrl = `${proto}//${location.hostname}${port}/ws/gesture/stream/`;
+    socket = new WebSocket(wsUrl);
+
+    socket.onopen = () => {
+        statusPill.className = 'status-pill on';
+        statusText.textContent = 'Connected — Start Camera';
+    };
+    socket.onclose = (e) => {
+        statusPill.className = 'status-pill off';
+        statusText.textContent = 'Disconnected';
+        stopDetection();
+        setTimeout(initSocket, 3000);
+    };
+    socket.onmessage = e => {
+        const data = JSON.parse(e.data);
+        if (data.type === 'init') {
+            serverAlphabetModelType = data.alphabet_model_type;
+            console.log('[Socket] Server model auto-configured:', serverAlphabetModelType);
+        } else if (data.type === 'prediction') {
+            handlePrediction(data);
+        }
+    };
+}
+initSocket();
+
+// Offscreen canvas for fallback image capture (preserves transparent overlay)
+let offscreenCanvas = null;
+let offscreenCtx = null;
+function getOffscreenCanvas() {
+    if (!offscreenCanvas) {
+        offscreenCanvas = document.createElement('canvas');
+        offscreenCanvas.width = 320;
+        offscreenCanvas.height = 240;
+        offscreenCtx = offscreenCanvas.getContext('2d');
+    }
+    return { canvas: offscreenCanvas, ctx: offscreenCtx };
+}
+
+window.startCameraIfNeeded = function() {
+    if (!camActive) {
+        startCamera();
+    }
+};
+
+async function startCamera() {
+    if (camActive) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({video: {width: {ideal: 640}, height: {ideal: 480}, facingMode: 'user'}});
+        video.srcObject = stream;
+        await video.play().catch(()=>{});
+        camActive = true;
+        camBtn.innerHTML = '<i class="fa-solid fa-camera-slash"></i> Stop Camera';
+        camBtn.classList.replace('g-btn-outline', 'g-btn-danger');
+        camStandby.classList.add('hidden');
+        livePill.classList.add('show');
+        streamBtn.disabled = false;
+        errorMsg.style.display = 'none';
+        
+        video.style.display = 'block';
+        canvas.style.display = 'block';
+
+        setTimeout(() => { if (!detecting) streamBtn.click(); }, 500);
+    } catch(e) {
+        console.error('Camera open error:', e);
+        stopCamera();
+        camStatusText.textContent = 'Camera blocked or unavailable';
+        errorMsg.style.display = 'block';
+        errorMsg.style.background = '#fee2e2';
+        errorMsg.style.color = '#ef4444';
+        errorMsg.innerHTML = `<strong>Camera Error:</strong> ${e.message || 'Permission denied'}. Please check permissions in your browser.`;
+    }
+}
+
+function stopCamera() {
+    if (video.srcObject) {
+        (video.srcObject.getTracks() || []).forEach(t => t.stop());
+        video.srcObject = null;
+    }
+    camActive = false;
+    camBtn.innerHTML = '<i class="fa-solid fa-camera"></i> Start Camera';
+    if (camBtn.classList.contains('g-btn-danger')) {
+        camBtn.classList.replace('g-btn-danger', 'g-btn-outline');
+    }
+    camStandby.classList.remove('hidden');
+    livePill.classList.remove('show');
+    video.style.display = 'none';
+    canvas.style.display = 'none';
+    streamBtn.disabled = true;
+    stopDetection();
+}
+
+camBtn.addEventListener('click', async () => {
+    if (!camActive) {
+        await startCamera();
+    } else {
+        stopCamera();
+    }
+});
+
+startCamera();
+
+streamBtn.addEventListener('click', () => {
+    if (!detecting) {
+        detecting = true;
+        streamBtn.innerHTML = '<i class="fa-solid fa-stop"></i> Stop Detection';
+        streamBtn.classList.replace('g-btn-primary', 'g-btn-danger');
+        document.getElementById('roi-box').classList.add('show');
+        frameInterval = setInterval(sendFrame, FRAME_MS);
+    } else {
+        stopDetection();
+    }
+});
+
+function stopDetection() {
+    detecting = false;
+    streamBtn.innerHTML = '<i class="fa-solid fa-play"></i> Start Detection';
+    if (streamBtn.classList.contains('g-btn-danger'))
+        streamBtn.classList.replace('g-btn-danger', 'g-btn-primary');
+    document.getElementById('roi-box').classList.remove('show');
+    clearInterval(frameInterval);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+}
+
+function sendFrame() {
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
+    
+    // If browser MediaPipe is available, always pass frames to it first to verify hand presence
+    if (useClientMediaPipe && mpHands) {
+        canvas.width  = 320;
+        canvas.height = 240;
+        mpHands.send({ image: video });
+    } else {
+        // Fallback: send raw base64 frame directly (backend will run face detection & skin contours)
+        const offscreen = getOffscreenCanvas();
+        offscreen.ctx.drawImage(video, 0, 0, offscreen.canvas.width, offscreen.canvas.height);
+        const frame = offscreen.canvas.toDataURL('image/jpeg', 0.4);
+        socket.send(JSON.stringify({type: 'frame', image: frame, mode: detectionMode, threshold: getConfThresh()}));
+    }
+}
+
+function checkClientHandAlignment(landmarks) {
+    let xMin = 1.0, xMax = 0.0, yMin = 1.0, yMax = 0.0;
+    for (let lm of landmarks) {
+        if (lm.x < xMin) xMin = lm.x;
+        if (lm.x > xMax) xMax = lm.x;
+        if (lm.y < yMin) yMin = lm.y;
+        if (lm.y > yMax) yMax = lm.y;
+    }
+    const handCx = (xMin + xMax) / 2;
+    const handCy = (yMin + yMax) / 2;
+    
+    // Check alignment relative to viewport bounds (0.0 to 1.0)
+    // Left/Right center tolerance is widened to [0.20, 0.80] for robustness
+    // Top/Bottom center tolerance is widened to [0.15, 0.85] for robustness
+    if (handCx < 0.20) {
+        return { aligned: false, message: 'Move hand to the right' };
+    } else if (handCx > 0.80) {
+        return { aligned: false, message: 'Move hand to the left' };
+    } else if (handCy < 0.15) {
+        return { aligned: false, message: 'Move hand down' };
+    } else if (handCy > 0.85) {
+        return { aligned: false, message: 'Move hand up' };
+    }
+    return { aligned: true, message: 'Correct hand position' };
+}
+
+function handleClientMediaPipeResults(results) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let normalized = null;
+    const needLandmarks = (detectionMode === 'words') || (detectionMode === 'alphabet' && serverAlphabetModelType === 'landmarks');
+    
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        drawHandSkeleton(results.multiHandLandmarks[0]);
+        normalized = normalizeLandmarks(results.multiHandLandmarks[0]);
+        
+        // Client-side absolute hand alignment check (as a non-blocking suggestion)
+        const alignment = checkClientHandAlignment(results.multiHandLandmarks[0]);
+        if (!alignment.aligned) {
+            guidanceMsg.innerHTML = `<span style="color:var(--g-warning);"><i class="fa-solid fa-circle-info"></i> Suggestion: ${alignment.message}</span>`;
+        }
+        clientAlignmentError = ''; // Never block predictions on backend
+        
+        // Hand is present -> stream coordinates or base64 frames based on model capabilities
+        if (needLandmarks) {
+            const normalized = normalizeLandmarks(results.multiHandLandmarks[0], detectionMode);
+            socket.send(JSON.stringify({type: 'frame', landmarks: normalized, mode: detectionMode, threshold: getConfThresh()}));
+        } else {
+            const offscreen = getOffscreenCanvas();
+            offscreen.ctx.drawImage(video, 0, 0, offscreen.canvas.width, offscreen.canvas.height);
+            const frame = offscreen.canvas.toDataURL('image/jpeg', 0.4);
+            socket.send(JSON.stringify({type: 'frame', image: frame, mode: detectionMode, has_hand: true, threshold: getConfThresh()}));
+        }
+    } else {
+        clientAlignmentError = '';
+        // Gating logic: explicitly tell the backend that NO hand is present in the frame
+        socket.send(JSON.stringify({type: 'frame', landmarks: null, image: null, mode: detectionMode, status: 'no_hands', message: 'No hands detected'}));
+    }
+}
+
+function normalizeLandmarks(landmarks, mode) {
+    const wrist = landmarks[0];
+    const centered = landmarks.map(lm => ({x: lm.x - wrist.x, y: lm.y - wrist.y, z: lm.z - wrist.z}));
+    const mcp = centered[9];
+    const distance = Math.sqrt(mcp.x * mcp.x + mcp.y * mcp.y + mcp.z * mcp.z);
+    
+    // All models (alphabet MLP and words LSTM) are trained on fully normalized data (wrist-to-MCP = 1.0)
+    const scale = 1.0;
+    
+    return distance > 0 ? centered.flatMap(lm => [(lm.x/distance)*scale, (lm.y/distance)*scale, (lm.z/distance)*scale]) : centered.flatMap(lm => [lm.x, lm.y, lm.z]);
+}
+
+function drawHandSkeleton(landmarks) {
+    const connections = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[0,9],[9,10],[10,11],[11,12],[0,13],[13,14],[14,15],[15,16],[0,17],[17,18],[18,19],[19,20],[5,9],[9,13],[13,17]];
+    ctx.strokeStyle = '#10b981'; ctx.lineWidth = 3;
+    connections.forEach(([i, j]) => {
+        ctx.beginPath();
+        ctx.moveTo(landmarks[i].x * canvas.width, landmarks[i].y * canvas.height);
+        ctx.lineTo(landmarks[j].x * canvas.width, landmarks[j].y * canvas.height);
+        ctx.stroke();
+    });
+    landmarks.forEach((lm, idx) => {
+        ctx.beginPath();
+        ctx.arc(lm.x * canvas.width, lm.y * canvas.height, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = idx === 0 ? '#ef4444' : '#6366f1'; 
+        ctx.fill();
+    });
+}
+
+function updateStabilizationUI() {
+    if (!stabilizationBadge) return;
+    if (stabilizationFrames > 0 && stabilizingLabel && stabilizingLabel !== 'NOTHING') {
+        stabilizationBadge.style.display = 'inline-block';
+        const pct = Math.min(100, Math.round((stabilizationFrames / getRequiredFrames()) * 100));
+        stabilizationBadge.textContent = `STABILIZING ${pct}%`;
+        stabilizationBadge.style.background = 'var(--g-warning)';
+        if (pct >= 100) {
+            stabilizationBadge.textContent = 'CONFIRMED';
+            stabilizationBadge.style.background = 'var(--g-success)';
+        }
+    } else {
+        stabilizationBadge.style.display = 'none';
+    }
+}
+
+function handlePrediction(data) {
+    if (clientAlignmentError) {
+        guidanceMsg.innerHTML = `<span style="color:var(--g-error);"><i class="fa-solid fa-hand"></i> ${clientAlignmentError}</span>`;
+        currentLetterBig.textContent = '—';
+        currentLetterGj.textContent = '';
+        confFill.style.width = '0%';
+        confPct.textContent = '0%';
+        letterOverlay.classList.remove('show');
+        stabilizingLabel = '';
+        stabilizationFrames = 0;
+        lastRegisteredLetter = '';
+        lastWordDetected = '';
+        updateStabilizationUI();
+        return;
+    }
+
+    if (!data.success || !data.label) {
+        // Show partial info if available (stabilizing, low_confidence etc.)
+        if (data.label && data.confidence) {
+            const partialLabel = data.label.toUpperCase();
+            const partialConf  = parseFloat(data.confidence);
+            currentLetterBig.textContent = partialLabel === 'NOTHING' ? '—' : partialLabel;
+            const gjPartial = GJ_MAP[partialLabel] || GJ_MAP[partialLabel.toLowerCase()] || '';
+            currentLetterGj.textContent = gjPartial;
+            confFill.style.width = partialConf + '%';
+            confPct.textContent = Math.round(partialConf) + '%';
+        } else {
+            currentLetterBig.textContent = '—';
+            currentLetterGj.textContent = '';
+            confFill.style.width = '0%';
+            confPct.textContent = '0%';
+        }
+        letterOverlay.classList.remove('show');
+        stabilizingLabel = '';
+        stabilizationFrames = 0;
+        lastRegisteredLetter = '';
+        lastWordDetected = '';
+        updateStabilizationUI();
+        
+        // Guidance messages based on prediction status
+        if (data.status === 'no_hands' || data.message === 'No hands detected') {
+            guidanceMsg.innerHTML = '<span style="color:var(--g-error);"><i class="fa-solid fa-hand"></i> Correct your hand position</span>';
+        } else if (data.status === 'buffering') {
+            guidanceMsg.innerHTML = '<span style="color:var(--g-primary);"><i class="fa-solid fa-spinner fa-spin"></i> Buffering (' + data.message + ')</span>';
+        } else if (data.status === 'low_confidence' || (data.message && data.message.includes('Low confidence'))) {
+            guidanceMsg.innerHTML = '<span style="color:var(--g-warning);"><i class="fa-solid fa-circle-question"></i> Give correct gesture / Keep steady</span>';
+        } else if (data.status === 'incorrect_position') {
+            guidanceMsg.innerHTML = `<span style="color:var(--g-error);"><i class="fa-solid fa-hand"></i> ${data.message}</span>`;
+        } else {
+            guidanceMsg.innerHTML = '<span style="color:var(--g-muted);"><i class="fa-solid fa-hand-pointer"></i> Place hand in guide box</span>';
+        }
+        return;
+    }
+    const label = data.label.toUpperCase();
+    const conf  = parseFloat(data.confidence || 0);
+    const gjLetter = GJ_MAP[label] || GJ_MAP[label.toLowerCase()] || '';
+    
+    currentLetterBig.textContent = label === 'NOTHING' ? '—' : label;
+    currentLetterGj.textContent = (label === 'NOTHING' || label === 'NOTHING') ? '' : gjLetter;
+    confFill.style.width = conf + '%';
+    confPct.textContent  = Math.round(conf) + '%';
+    
+    if (conf < getConfThresh() || label === 'NOTHING') {
+        letterOverlay.classList.remove('show');
+        currentLetterGj.textContent = '';
+        lastLabel = '';
+        stabilizingLabel = '';
+        stabilizationFrames = 0;
+        lastRegisteredLetter = '';
+        lastWordDetected = '';
+        updateStabilizationUI();
+        guidanceMsg.innerHTML = '<span style="color:var(--g-warning);"><i class="fa-solid fa-circle-question"></i> Keep hand steady / Give correct gesture</span>';
+        return;
+    }
+    
+    // Debounce / Stabilization logic (prediction smoothing)
+    if (label === stabilizingLabel) {
+        stabilizationFrames++;
+    } else {
+        stabilizingLabel = label;
+        stabilizationFrames = 1;
+    }
+    
+    updateStabilizationUI();
+    
+    if (stabilizationFrames < getRequiredFrames()) {
+        guidanceMsg.innerHTML = `<span style="color:var(--g-primary);"><i class="fa-solid fa-spinner fa-spin"></i> Stabilizing gesture: <b>${label}</b></span>`;
+        letterOverlay.classList.remove('show');
+        return;
+    }
+    
+    // Once stabilized for required frames, proceed to build word/sentence
+    // Use backend-provided Gujarati label if available
+    const gjFromBackend = data.gujarati || GJ_MAP[label.toLowerCase()] || GJ_MAP[label] || '';
+    guidanceMsg.innerHTML = `<span style="color:var(--g-success);"><i class="fa-solid fa-circle-check"></i> Detected: <b>${label}</b>${gjFromBackend ? ' — <span style="font-family:Noto Sans Gujarati;">' + gjFromBackend + '</span>' : ''}</span>`;
+    letterOverlay.textContent = label;
+    letterOverlay.classList.add('show');
+    
+    if (stabilizationFrames === getRequiredFrames()) {
+        const confVal = parseFloat(data.confidence || 0);
+        const speechThreshold = parseFloat(document.getElementById('voice-threshold').value || 60);
+        
+        if (detectionMode === 'words') {
+            // Word mode: backend already confirmed the word, add it directly to sentence
+            const now = Date.now();
+            if (label !== lastWordDetected || (now - lastWordTime > 2500)) {
+                const gjWord = gjFromBackend || GJ_MAP[label.toLowerCase()] || label;
+                sentence.push(label.toLowerCase());
+                sentenceGjWords.push(gjWord); // Push to parallel array!
+                lastWordDetected = label;
+                lastWordTime = now;
+                updateSentence();
+                
+                // Speak the word immediately based on setting and confidence threshold
+                if (confVal >= speechThreshold) {
+                    playAutoVoice(label, gjWord);
+                }
+                addToLog(label, gjFromBackend);
+            }
+        } else {
+            // Special gestures (DEL, SPACE) execute immediately
+            const isSpecialGesture = (label === 'DEL' || label === 'DELETE' || label === 'SPACE');
+            if (isSpecialGesture) {
+                registerLetter(label);
+                lastRegisteredLetter = '';   // allow repeating
+                stabilizingLabel = '';        // re-stabilize next gesture
+                stabilizationFrames = 0;
+                updateStabilizationUI();
+            } else {
+                // Normal letters: set as PENDING — user must click ADD button
+                setPendingLetter(label, gjFromBackend);
+            }
+        }
+    }
+}
+
+// Helper to insert text at caret position in a given input
+function insertAtCursor(inputElement, value) {
+    const start = inputElement.selectionStart;
+    const end = inputElement.selectionEnd;
+    const text = inputElement.value;
+    
+    inputElement.value = text.slice(0, start) + value + text.slice(end);
+    const newPos = start + value.length;
+    inputElement.setSelectionRange(newPos, newPos);
+    inputElement.focus();
+}
+
+// Helper to delete character before caret position in a given input
+function deleteAtCursor(inputElement) {
+    const start = inputElement.selectionStart;
+    const end = inputElement.selectionEnd;
+    const text = inputElement.value;
+    
+    if (start === end) {
+        if (start > 0) {
+            inputElement.value = text.slice(0, start - 1) + text.slice(start);
+            inputElement.setSelectionRange(start - 1, start - 1);
+        }
+    } else {
+        inputElement.value = text.slice(0, start) + text.slice(end);
+        inputElement.setSelectionRange(start, start);
+    }
+    inputElement.focus();
+}
+
+// Get the natural pronunciation/meaning translation for spelled words
+function getLiveGujaratiTranslation(word) {
+    const w = word.trim().toLowerCase();
+    if (!w) return '';
+    // Check direct dictionary translation first (e.g. hello -> હેલો, thank_you -> આભાર, water -> પાણી)
+    if (GJ_MAP[w]) return GJ_MAP[w];
+    if (GJ_MAP[w.toUpperCase()]) return GJ_MAP[w.toUpperCase()];
+    
+    // Otherwise fallback to letter-by-letter character mapping
+    return [...w].map(c => GJ_MAP[c.toUpperCase()] || c).join('');
+}
+
+function syncStateFromInputs(e) {
+    if (e && e.target === gjWordInput) {
+        isGjManuallyEdited = true;
+    }
+    
+    currentWord = currentWordInput.value;
+    
+    // Auto-update Gujarati translation while typing English, unless overridden manually
+    if (!isGjManuallyEdited && (!e || e.target === currentWordInput)) {
+        gjWordInput.value = getLiveGujaratiTranslation(currentWord);
+    }
+    
+    currentGjWord = gjWordInput.value;
+    
+    // Update live previews
+    if (currentGjWord.length > 0) {
+        gjLivePreview.textContent = '✍ ' + currentGjWord;
+        gjLivePreview.classList.add('has-content');
+        
+        // Background pre-fetch for TTS to ensure instant audio playback when confirmed/spoken
+        preFetchTTS(currentGjWord, 'gu');
+    } else {
+        gjLivePreview.textContent = '';
+        gjLivePreview.classList.remove('has-content');
+    }
+}
+
+// Set a detected letter as pending (waiting for user to click ADD)
+function setPendingLetter(label, gjChar) {
+    pendingLetter   = label;
+    pendingGujarati = gjChar || GJ_MAP[label] || GJ_MAP[label.toLowerCase()] || label;
+    document.getElementById('pending-letter-en').textContent = label;
+    document.getElementById('pending-letter-gj').textContent = pendingGujarati;
+    document.getElementById('pending-zone').classList.add('has-pending');
+    document.getElementById('add-pending-btn').disabled = false;
+    // Update overlay on camera
+    letterOverlay.textContent = label;
+    letterOverlay.classList.add('show');
+    // Update guidance
+    guidanceMsg.innerHTML = `<span style="color:var(--g-warning);font-weight:800;"><i class="fa-solid fa-hand-point-right"></i> <b>${label}</b> detected — Click ADD or press Enter!</span>`;
+}
+
+// Add the pending letter to currentWord (triggered by ADD button click)
+function addPendingLetter() {
+    if (!pendingLetter) return;
+    
+    insertAtCursor(currentWordInput, pendingLetter);
+    if (!isGjManuallyEdited) {
+        gjWordInput.value = getLiveGujaratiTranslation(currentWordInput.value);
+    } else {
+        insertAtCursor(gjWordInput, pendingGujarati);
+    }
+    
+    syncStateFromInputs();
+    addToLog(pendingLetter, pendingGujarati);
+    
+    // Clear pending state
+    pendingLetter   = '';
+    pendingGujarati = '';
+    document.getElementById('pending-letter-en').textContent = '—';
+    document.getElementById('pending-letter-gj').textContent = '';
+    document.getElementById('pending-zone').classList.remove('has-pending');
+    document.getElementById('add-pending-btn').disabled = true;
+    // Reset stabilization for next gesture
+    stabilizingLabel    = '';
+    stabilizationFrames = 0;
+    lastRegisteredLetter = '';
+    updateStabilizationUI();
+    renderWordBuilder();
+}
+
+function registerLetter(label) {
+    const cleanLabel = label.trim().toUpperCase();
+    if (cleanLabel === 'DEL' || cleanLabel === 'DELETE') {
+        deleteAtCursor(currentWordInput);
+        deleteAtCursor(gjWordInput);
+        syncStateFromInputs();
+        guidanceMsg.innerHTML = '<span style="color:var(--g-error);"><i class="fa-solid fa-delete-left"></i> Deleted last letter</span>';
+        renderWordBuilder();
+        return;
+    } else if (cleanLabel === 'SPACE') {
+        commitWord();
+        guidanceMsg.innerHTML = '<span style="color:var(--g-success);"><i class="fa-solid fa-arrow-right"></i> Word added — keep signing!</span>';
+        renderWordBuilder();
+        return;
+    } else if (cleanLabel !== 'NOTHING' && cleanLabel !== 'UNKNOWN' && cleanLabel !== '') {
+        if (cleanLabel.length > 1) {
+            // Word-mode direct word sign
+            const gjWord = GJ_MAP[cleanLabel.toLowerCase()] || cleanLabel;
+            commitWord();
+            sentence.push(cleanLabel.toLowerCase());
+            sentenceGjWords.push(gjWord);
+            updateSentence();
+        } else {
+            insertAtCursor(currentWordInput, cleanLabel);
+            if (!isGjManuallyEdited) {
+                gjWordInput.value = getLiveGujaratiTranslation(currentWordInput.value);
+            } else {
+                insertAtCursor(gjWordInput, GJ_MAP[cleanLabel] || cleanLabel);
+            }
+            syncStateFromInputs();
+        }
+    }
+    renderWordBuilder();
+    addToLog(label, GJ_MAP[cleanLabel] || GJ_MAP[cleanLabel.toLowerCase()] || '');
+}
+
+function commitWord() {
+    const wEn = currentWordInput.value.trim();
+    const wGj = gjWordInput.value.trim() || getLiveGujaratiTranslation(wEn);
+    
+    if (wEn.length > 0) {
+        sentence.push(wEn);
+        sentenceGjWords.push(wGj);
+        
+        currentWordInput.value = '';
+        gjWordInput.value = '';
+        isGjManuallyEdited = false;
+        
+        syncStateFromInputs();
+        updateSentence();
+        
+        // Speak on word commit
+        const fullText = sentence.join(' ');
+        const voiceLang = document.getElementById('voice-lang-select').value;
+        if (audioEnabled && fullText) {
+            if (voiceLang === 'en') speakBrowser(fullText, 'en-US');
+            else if (voiceLang === 'gu') speakBrowser(sentenceGjWords.join(' '), 'gu-IN');
+        }
+    }
+}
+
+function renderWordBuilder() {
+    syncStateFromInputs();
+}
+
+function updateSentence() {
+    const fullText = sentence.join(' ');
+    if (fullText.length === 0) {
+        sentenceEn.textContent = 'Sign letters to build words...';
+        sentenceGj.textContent = '';
+        gjLivePreview.textContent = '';
+        gjLivePreview.classList.remove('has-content');
+        return;
+    }
+    sentenceEn.textContent = fullText;
+    // Show local Gujarati immediately (from our sentenceGjWords)
+    const localGj = sentenceGjWords.join(' ');
+    if (localGj) sentenceGj.textContent = localGj;
+    // Then enhance with API translation
+    translateSentence(fullText);
+}
+
+const GJ_MAP = {
+    // Alphabet
+    'A':'અ','B':'બ','C':'ક','D':'ડ','E':'ઇ','F':'ફ','G':'ગ','H':'હ','I':'ઈ','J':'જ',
+    'K':'ક','L':'લ','M':'મ','N':'ન','O':'ઓ','P':'પ','Q':'ક','R':'ર','S':'સ','T':'ટ',
+    'U':'ઉ','V':'વ','W':'ડ','X':'ક','Y':'ય','Z':'ઝ',
+    // 30 Gujarati Sign Language words
+    'hello':'હેલો','thank_you':'આભાર','yes':'હા','no':'ના',
+    'please':'કૃપા કરીને','sorry':'માફ કરશો','help':'મદદ','water':'પાણી',
+    'food':'ખોરાક','home':'ઘર','school':'શાળા','doctor':'ડૉક્ટર',
+    'mother':'માતા','father':'પિતા','family':'પરિવાર','friend':'મિત્ર',
+    'good':'સારું','bad':'ખરાબ','love':'પ્રેમ','eat':'ખાઓ',
+    'drink':'પીઓ','come':'આવો','go':'જાઓ','stop':'રોકો',
+    'name':'નામ','my':'મારું','your':'તમારું',
+    'how_are_you':'કેમ છો?','i_am_fine':'હું ઠીક છું','what':'શું',
+    // Common extras
+    'thank':'આભાર','namaste':'નમસ્તે','ok':'ઠીક','fine':'ઠીક','pain':'દર્દ',
+    'sick':'બીમાર','medicine':'દવા','money':'પૈસા','work':'કામ','time':'સમય',
+    'happy':'ખુશ','sad':'દુઃખી','big':'મોટું','small':'નાનું','hot':'ગરમ',
+    'cold':'ઠંડું','fast':'ઝડપ','slow':'ધીમું','open':'ખોલો','close':'બંધ',
+    'give':'આપો','take':'લો','read':'વાંચો','write':'લખો','learn':'શીખો',
+    'play':'રમો','run':'દોડો','walk':'ચાલો','sit':'બેસો','stand':'ઊભા',
+    'beautiful':'સુંદર','clean':'સ્વચ્છ','welcome':'સ્વાગત','goodbye':'આવજો',
+};
+
+async function translateSentence(text) {
+    if (!text) return;
+    const words = text.toLowerCase().split(' ');
+    const gjWords = words.map(w => GJ_MAP[w] || GJ_MAP[w.toUpperCase()] || GJ_MAP[w.replace(/ /g,'_')] || w);
+    sentenceGj.textContent = gjWords.join(' ');
+    try {
+        const resp = await fetch('/api/translator/translate/', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+            body: JSON.stringify({text})
+        });
+        if (resp.ok) {
+            const data = await resp.json();
+            if (data.translated) {
+                sentenceGj.textContent = data.translated;
+                
+                // Pre-fetch translated sentence TTS so manual speak button works instantly
+                preFetchTTS(data.translated, 'gu');
+                
+                // Auto-speak block removed to prevent overlapping audio cancellations with immediate word playback
+            }
+            if (data.corrected) sentenceEn.textContent = data.corrected;
+        }
+    } catch(e) {}
+}
+
+// ── Word Builder Button Listeners ─────────────────────────────────────────────
+// Add Pending Letter button (the main new interaction)
+document.getElementById('add-pending-btn').addEventListener('click', addPendingLetter);
+
+// Keyboard shortcut: Enter key adds pending letter
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.target.matches('input,textarea,select,button')) {
+        e.preventDefault();
+        addPendingLetter();
+    }
+});
+
+// Matra buttons: add vowel sign to last Gujarati consonant
+document.querySelectorAll('.matra-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const matra = btn.dataset.matra;
+        insertAtCursor(gjWordInput, matra);
+        isGjManuallyEdited = true;
+        syncStateFromInputs();
+        // Flash feedback
+        btn.style.background = 'var(--g-gj)';
+        btn.style.color = 'white';
+        setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
+    });
+});
+
+// English Vowel buttons: add English vowel to currentWord and its Gujarati equivalent to currentGjWord
+document.querySelectorAll('.vowel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const vowel = btn.dataset.vowel;
+        const gjVowel = GJ_MAP[vowel] || vowel;
+        insertAtCursor(currentWordInput, vowel);
+        if (!isGjManuallyEdited) {
+            gjWordInput.value = getLiveGujaratiTranslation(currentWordInput.value);
+        } else {
+            insertAtCursor(gjWordInput, gjVowel);
+        }
+        syncStateFromInputs();
+        // Flash feedback
+        btn.style.background = '#3b82f6';
+        btn.style.color = 'white';
+        setTimeout(() => { btn.style.background = ''; btn.style.color = ''; }, 300);
+    });
+});
+
+addWordBtn.addEventListener('click', () => { commitWord(); });
+delLetterBtn.addEventListener('click', () => {
+    deleteAtCursor(currentWordInput);
+    deleteAtCursor(gjWordInput);
+    syncStateFromInputs();
+});
+clearWordBtn.addEventListener('click', () => {
+    currentWordInput.value = '';
+    gjWordInput.value = '';
+    isGjManuallyEdited = false;
+    syncStateFromInputs();
+    pendingLetter   = '';
+    pendingGujarati = '';
+    document.getElementById('pending-letter-en').textContent = '—';
+    document.getElementById('pending-letter-gj').textContent = '';
+    document.getElementById('pending-zone').classList.remove('has-pending');
+    document.getElementById('add-pending-btn').disabled = true;
+    renderWordBuilder();
+});
+clearSentenceBtn.addEventListener('click', () => {
+    sentence        = [];
+    sentenceGjWords = [];
+    currentWordInput.value = '';
+    gjWordInput.value = '';
+    isGjManuallyEdited = false;
+    syncStateFromInputs();
+    pendingLetter   = '';
+    pendingGujarati = '';
+    document.getElementById('pending-letter-en').textContent = '—';
+    document.getElementById('pending-letter-gj').textContent = '';
+    document.getElementById('pending-zone').classList.remove('has-pending');
+    document.getElementById('add-pending-btn').disabled = true;
+    renderWordBuilder();
+    updateSentence();
+});
+
+recalibrateBtn.addEventListener('click', () => {
+    if (socket) socket.close();
+    initSocket();
+    // Reset all state
+    currentWordInput.value = '';
+    gjWordInput.value = '';
+    isGjManuallyEdited = false;
+    syncStateFromInputs();
+    sentence        = [];
+    sentenceGjWords = [];
+    pendingLetter   = '';
+    pendingGujarati = '';
+    stabilizingLabel    = '';
+    stabilizationFrames = 0;
+    lastLabel           = '';
+    lastWordDetected    = '';
+    clientAlignmentError = '';
+    document.getElementById('pending-letter-en').textContent = '—';
+    document.getElementById('pending-letter-gj').textContent = '';
+    document.getElementById('pending-zone').classList.remove('has-pending');
+    document.getElementById('add-pending-btn').disabled = true;
+    renderWordBuilder();
+    updateSentence();
+    updateStabilizationUI();
+    const toast = document.getElementById('toast');
+    if (toast) {
+        toast.textContent = 'System Recalibrated! All states reset.';
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.add('hidden'), 3000);
+    }
+});
+
+speakSentenceBtn.addEventListener('click', () => {
+    const gjText = sentenceGj.textContent.trim();
+    if (gjText && gjText !== '') {
+        speak(gjText, 'gu-IN', true);
+    } else if (currentGjWord) {
+        speak(currentGjWord, 'gu-IN', true);
+    } else if (currentWord) {
+        const gjWord = currentWord.toUpperCase().split('').map(c => GJ_MAP[c] || c).join('');
+        speak(gjWord, 'gu-IN', true);
+    }
+});
+
+
+const speakSentenceEnBtn = document.getElementById('speak-sentence-en-btn');
+speakSentenceEnBtn.addEventListener('click', () => {
+    const enText = sentenceEn.textContent.trim();
+    if (enText && enText !== 'Sign letters to build words...') {
+        speak(enText, 'en-US', true);
+    } else if (currentWord) {
+        speak(currentWord, 'en-US', true);
+    }
+});
+
+speakBtn.addEventListener('click', () => {
+    audioEnabled = !audioEnabled;
+    speakBtn.innerHTML = audioEnabled ? '<i class="fa-solid fa-volume-high"></i> On' : '<i class="fa-solid fa-volume-xmark"></i> Off';
+    if (audioEnabled) {
+        speakBtn.style.background = '#f0fdf4';
+        speakBtn.style.borderColor = '#bbf7d0';
+        speakBtn.style.color = 'var(--g-success)';
+    } else {
+        speakBtn.style.background = '#fef2f2';
+        speakBtn.style.borderColor = '#fecaca';
+        speakBtn.style.color = 'var(--g-error)';
+    }
+});
+
+// ── Voice system ─────────────────────────────────────────────────────────────
+// Pre-load voices as early as possible (Chrome loads asynchronously)
+let availableVoices = [];
+function loadVoices() {
+    const v = window.speechSynthesis ? window.speechSynthesis.getVoices() : [];
+    if (v.length > 0) availableVoices = v;
+}
+if ('speechSynthesis' in window) {
+    loadVoices();
+    window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+}
+
+function getBestVoice(lang) {
+    if (availableVoices.length === 0) availableVoices = window.speechSynthesis.getVoices();
+    // Exact lang match first
+    let v = availableVoices.find(v => v.lang === lang);
+    if (v) return v;
+    // Prefix match (e.g. 'en' for 'en-US')
+    const prefix = lang.split('-')[0];
+    v = availableVoices.find(v => v.lang.startsWith(prefix));
+    if (v) return v;
+    // Fallback to English
+    v = availableVoices.find(v => v.lang.startsWith('en'));
+    return v || null;
+}
+
+async function playAutoVoice(enText, guText) {
+    if (!audioEnabled) return;
+    const voiceLang = document.getElementById('voice-lang-select').value;
+    if (voiceLang === 'gu') {
+        // Use browser TTS with Gujarati voice if available, else English voice
+        await speakBrowser(guText, 'gu-IN', enText);
+    } else if (voiceLang === 'en') {
+        await speakBrowser(enText, 'en-US');
+    } else if (voiceLang === 'both') {
+        await speakBrowser(enText, 'en-US');
+        await new Promise(r => setTimeout(r, 300));
+        await speakBrowser(guText, 'gu-IN', enText);
+    }
+}
+
+let lastSpokenText = "";
+let isSpeaking = false;
+
+// Global Audio system for autoplay and low-latency voice response
+let audioPlayer = null;
+const ttsCache = {};
+
+// Initialize and unlock the audio player on the first user interaction
+function initAudioPlayer() {
+    if (!audioPlayer) {
+        audioPlayer = new Audio();
+        // Play and immediately pause to unlock the audio object for later async use
+        audioPlayer.play().then(() => {
+            audioPlayer.pause();
+            console.log('[Audio] Global audio player unlocked.');
+        }).catch(err => {
+            console.warn('[Audio] Autoplay unlock failed, will retry on next interaction:', err);
+        });
+    }
+}
+
+// Attach gesture listeners to unlock audio play
+['click', 'touchstart', 'keydown'].forEach(evtType => {
+    document.addEventListener(evtType, initAudioPlayer, { once: true });
+});
+
+// Helper to pre-fetch and cache voice to avoid any latency during auto-speak/manual play
+function preFetchTTS(text, lang = 'gu') {
+    if (!text || ttsCache[text]) return;
+    
+    fetch('/api/translator/voice/text-to-speech/', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+        body: JSON.stringify({text: text, language: lang})
+    }).then(resp => {
+        if (resp.ok) return resp.json();
+    }).then(data => {
+        if (data && data.audio_base64) {
+            ttsCache[text] = data.audio_base64;
+            console.log('[Audio] Pre-fetched and cached voice for:', text);
+        }
+    }).catch(err => {
+        console.debug('[Audio] Pre-fetch failed (expected/non-blocking):', err);
+    });
+}
+
+// playBase64Audio — plays back base64 gTTS audio using the global unlocked audio player
+function playBase64Audio(base64Data, volume, rate, callback) {
+    try {
+        if (!audioPlayer) {
+            audioPlayer = new Audio();
+        }
+        
+        // Stop currently playing sound
+        audioPlayer.pause();
+        
+        audioPlayer.src = "data:audio/mp3;base64," + base64Data;
+        audioPlayer.volume = volume;
+        audioPlayer.playbackRate = rate;
+        
+        audioPlayer.onended = () => {
+            if (callback) callback();
+        };
+        audioPlayer.onerror = (e) => {
+            console.error('[Audio] Playback error:', e);
+            if (callback) callback();
+        };
+        
+        audioPlayer.play().catch(err => {
+            console.warn('[Audio] Playback interrupted or blocked:', err);
+            if (callback) callback();
+        });
+    } catch(err) {
+        console.error('[Audio] playBase64Audio error:', err);
+        if (callback) callback();
+    }
+}
+
+// speakBrowser — instant browser TTS, real-time, no network
+// Redirects Gujarati text to backend gTTS voice helper to guarantee natural pronunciation on all devices
+async function speakBrowser(text, lang, fallbackText) {
+    if (!text) return;
+    
+    // Redirect Gujarati to backend gTTS voice helper for correct pronunciation
+    if (lang.startsWith('gu')) {
+        return speak(text, 'gu-IN', false);
+    }
+    
+    if (isSpeaking) {
+        window.speechSynthesis.cancel();
+        isSpeaking = false;
+    }
+    if (text === lastSpokenText) return;
+    lastSpokenText = text;
+
+    if (!('speechSynthesis' in window)) return;
+
+    const volume = parseFloat(document.getElementById('voice-volume').value || 1.0);
+    const rate   = parseFloat(document.getElementById('voice-rate').value || 1.0);
+
+    window.speechSynthesis.cancel();
+
+    return new Promise((resolve) => {
+        const speakText = text;
+        const utterance = new SpeechSynthesisUtterance(speakText);
+        utterance.lang   = lang;
+        utterance.volume = volume;
+        utterance.rate   = rate;
+
+        const voice = getBestVoice(lang);
+        if (voice) utterance.voice = voice;
+
+        isSpeaking = true;
+        utterance.onend   = () => { isSpeaking = false; resolve(); };
+        utterance.onerror = () => { isSpeaking = false; resolve(); };
+        window.speechSynthesis.speak(utterance);
+    });
+}
+
+// speak — used by manual buttons and auto-speak: uses Gujarati TTS backend or browser fallback
+async function speak(text, lang, force = false) {
+    if (!text) return;
+    if (!force && text === lastSpokenText) return;
+    if (!force) lastSpokenText = text;
+
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+
+    const volume = parseFloat(document.getElementById('voice-volume').value || 1.0);
+    const rate   = parseFloat(document.getElementById('voice-rate').value || 1.0);
+
+    return new Promise(async (resolve) => {
+        // For Gujarati, try backend gTTS first (higher quality & correct pronunciation)
+        if (lang.startsWith('gu')) {
+            // Check cache
+            if (ttsCache[text]) {
+                console.log('[Audio] Cache hit for:', text);
+                playBase64Audio(ttsCache[text], volume, rate, resolve);
+                return;
+            }
+            
+            try {
+                const resp = await fetch('/api/translator/voice/text-to-speech/', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'X-CSRFToken': getCsrf()},
+                    body: JSON.stringify({text: text, language: 'gu'})
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data.audio_base64) {
+                        ttsCache[text] = data.audio_base64;
+                        playBase64Audio(data.audio_base64, volume, rate, resolve);
+                        return;
+                    }
+                }
+            } catch(e) {
+                console.warn("Backend TTS failed, using browser fallback", e);
+            }
+        }
+
+        // Browser TTS fallback for non-Gujarati or failure
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang   = lang;
+            utterance.volume = volume;
+            utterance.rate   = rate;
+            const voice = getBestVoice(lang);
+            if (voice) utterance.voice = voice;
+            utterance.onend   = () => resolve();
+            utterance.onerror = () => resolve();
+            window.speechSynthesis.speak(utterance);
+        } else {
+            resolve();
+        }
+    });
+}
+
+function addToLog(label, gujarati) {
+    logEmpty.style.display = 'none';
+    logCount++;
+    logBadge.textContent = String(logCount);
+    const li = document.createElement('li');
+    li.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.55rem 0.75rem;background:#fafafa;border:1px solid var(--g-border);border-radius:10px;';
+    const gjDisplay = gujarati ? `<span style="font-family:Noto Sans Gujarati;color:var(--g-gj);font-weight:700;font-size:1rem;">${gujarati}</span>` : '';
+    li.innerHTML = `<i class="fa-solid fa-hand-back-fist" style="color:var(--g-primary);"></i> <b>${label}</b> ${gjDisplay} <span style="flex:1;"></span><small style="color:var(--g-muted);font-size:0.65rem;">${new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</small>`;
+    logList.prepend(li);
+    if (logList.children.length > 15) logList.lastElementChild.remove();
+}
+
+function getCsrf() {
+    if (typeof getCookie === 'function') {
+        const cookieToken = getCookie('csrftoken');
+        if (cookieToken) return cookieToken;
+    }
+    const el = document.querySelector('[name=csrfmiddlewaretoken]');
+    return el ? el.value : '';
+}
+
+    // Slider listeners
+    const voiceVolume = document.getElementById('voice-volume');
+    const volumeVal = document.getElementById('volume-val');
+    if (voiceVolume && volumeVal) {
+        voiceVolume.addEventListener('input', () => {
+            volumeVal.textContent = parseFloat(voiceVolume.value).toFixed(1);
+        });
+    }
+    
+    const voiceRate = document.getElementById('voice-rate');
+    const rateVal = document.getElementById('rate-val');
+    if (voiceRate && rateVal) {
+        voiceRate.addEventListener('input', () => {
+            rateVal.textContent = parseFloat(voiceRate.value).toFixed(1);
+        });
+    }
+
+    const voiceThreshold = document.getElementById('voice-threshold');
+    const thresholdVal = document.getElementById('threshold-val');
+    if (voiceThreshold && thresholdVal) {
+        voiceThreshold.addEventListener('input', () => {
+            thresholdVal.textContent = voiceThreshold.value + '%';
+        });
+    }
+
+    // Trigger voices preload
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+    }
+
+    // Initial render
+    renderWordBuilder();
+
+}); // end DOMContentLoaded
+</script>
+{% csrf_token %}
+{% endblock %}

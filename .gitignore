@@ -1,0 +1,93 @@
+# ==========================================
+# Gitignore for Frontend and Backend Project
+# ==========================================
+
+# --- System & OS Files ---
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# --- IDEs and Editors ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+
+# --- Environment & Credentials (CRITICAL) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+*.pem
+*.key
+
+# --- Python & Django (Backend) ---
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Django specific
+db.sqlite3
+db.sqlite3-journal
+/media/
+/static_collected/
+/staticfiles/
+backend/venv/
+backend/env/
+backend/.venv/
+
+# Generated local assets / test files
+backend/*.mp3
+backend/test_voice*.mp3
+backend/voice_gu_*.mp3
+
+# --- Node / JavaScript (Frontend) ---
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# Frontend Build directories (if using SPA frameworks in the future)
+dist/
+build/
+.next/
+out/
+.nuxt/
+.cache/
+
+# --- Temporary & Archive Files ---
+*.zip
+*.tar.gz
+*.rar
+asl-alphabet.zip
+
+# --- Machine Learning Datasets & Models ---
+backend/dataset/raw_images/
+backend/dataset/sequences/
+backend/dataset/processed_data/
+backend/dataset/models/*.h5
+backend/dataset/models/*_progress.json
+backend/dataset/models/*_info.json
+backend/services/models/*.task
+test_extract/

@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SignTranslate | Web Accessibility Assistant{% endblock %}
+
+{% block content %}
+<!-- Premium Hero Section -->
+<section class="hero animate-fade-in" aria-labelledby="hero-heading">
+    <div class="container hero-container">
+        <div class="hero-text">
+            <h1 id="hero-heading">Break Communication Barriers Seamlessly.</h1>
+            <p class="subheading">A stunning, completely accessible web application designed to empower deaf and mute individuals to communicate dynamically via Text, Voice, and Sign Language.</p>
+            
+            <div class="hero-buttons mt-4">
+                <a href="{% url 'translation' %}" class="btn btn-primary" aria-label="Start English to Gujarati Translation">
+                    Start Translation <i class="fa-solid fa-arrow-right"></i>
+                </a>
+                <a href="{% url 'gesture' %}" class="btn btn-secondary" aria-label="Try Webcam Gesture Detection">
+                    <i class="fa-solid fa-camera"></i> Live Hand Sign Reader
+                </a>
+            </div>
+            
+            <!-- Trust/Accessibility Badge -->
+            <div style="margin-top: 40px; display: inline-flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.6); padding: 8px 16px; border-radius: 20px; color: var(--text-light); font-size: 0.9rem; border: 1px solid rgba(139,92,246,0.2);">
+                <i class="fa-solid fa-check-circle" style="color: var(--primary-color);"></i>
+                100% Free & Highly Accessible Interface
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Premium Features Matrix -->
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Core Capabilities</h2>
+        <div class="features-grid">
+            
+            <!-- Feature 1 -->
+            <div class="feature-card animate-fade-in" style="animation-delay: 0.1s;">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-language"></i>
+                </div>
+                <h3>English to Gujarati</h3>
+                <p>Advanced real-time translation connecting fluent English inputs directly into beautiful, legible Gujarati script.</p>
+            </div>
+            
+            <!-- Feature 2 -->
+            <div class="feature-card animate-fade-in" style="animation-delay: 0.2s;">
+                <div class="feature-icon-wrapper" style="background: var(--secondary-gradient);">
+                    <i class="fa-solid fa-microphone-lines"></i>
+                </div>
+                <h3>Voice Capabilities</h3>
+                <p>Never type again. Leverage deep browser speech recognition to capture your speech perfectly.</p>
+            </div>
+            
+            <!-- Feature 3 -->
+            <div class="feature-card animate-fade-in" style="animation-delay: 0.3s;">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-hand-sparkles"></i>
+                </div>
+                <h3>Sign Language A.I.</h3>
+                <p>Turn on your camera. Our machine learning integration reads MediaPipe hand structures in real-time securely.</p>
+            </div>
+            
+            <!-- Feature 4 -->
+            <div class="feature-card animate-fade-in" style="animation-delay: 0.4s;">
+                <div class="feature-icon-wrapper" style="background: var(--secondary-gradient);">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <h3>Activity Ledger</h3>
+                <p>Always review what you discussed. Your secure personal dashboard tracks an ongoing history of translations.</p>
+            </div>
+            
+            <!-- Feature 5 -->
+            <div class="feature-card animate-fade-in" style="animation-delay: 0.5s;">
+                <div class="feature-icon-wrapper">
+                    <i class="fa-solid fa-star"></i>
+                </div>
+                <h3>Rapid Favorites</h3>
+                <p>Save vital or emergency phrases into your personalized collection to rapidly vocalize them in the real world.</p>
+            </div>
+            
+            <!-- Feature 6 -->
+            <div class="feature-card animate-fade-in" style="animation-delay: 0.6s;">
+                <div class="feature-icon-wrapper" style="background: var(--secondary-gradient);">
+                    <i class="fa-brands fa-accessible-icon"></i>
+                </div>
+                <h3>Accessible UX</h3>
+                <p>Large typography, elegant layout flow, color-blind friendly contrasts, and zero unnecessary distractions.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- How It Works Flow -->
+<section class="features" style="background: rgba(255,255,255,0.4); border-radius: 40px; margin: 40px auto; max-width: 1200px;">
+    <div class="container text-center" style="padding: 60px 20px;">
+        <h2 class="section-title">Seamless Workflow</h2>
+        <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 40px;">
+            <div style="flex: 1; min-width: 200px; padding: 20px;">
+                <h1 style="color: var(--primary-color); font-size: 3rem; margin-bottom: 10px;">1</h1>
+                <h4 style="font-size: 1.2rem; margin-bottom: 10px;">Login/Create Account</h4>
+                <p style="color: var(--text-light); font-size: 0.95rem;">Securely authenticate to maintain history and preferences.</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; padding: 20px;">
+                <h1 style="color: var(--primary-color); font-size: 3rem; margin-bottom: 10px;">2</h1>
+                <h4 style="font-size: 1.2rem; margin-bottom: 10px;">Choose Modality</h4>
+                <p style="color: var(--text-light); font-size: 0.95rem;">Pick between dictation/typing or live camera sign detection.</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; padding: 20px;">
+                <h1 style="color: var(--primary-color); font-size: 3rem; margin-bottom: 10px;">3</h1>
+                <h4 style="font-size: 1.2rem; margin-bottom: 10px;">Display Results</h4>
+                <p style="color: var(--text-light); font-size: 0.95rem;">Receive immediate localized text feedback on-screen.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

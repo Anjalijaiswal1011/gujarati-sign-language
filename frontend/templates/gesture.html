@@ -1,0 +1,1129 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign Language Studio | SignTranslate{% endblock %}
+
+{% block content %}
+<style>
+/* Premium CSS Theme for Sign Language Studio */
+:root {
+    --studio-primary: #6366f1;
+    --studio-primary-light: #e0e7ff;
+    --studio-success: #10b981;
+    --studio-success-light: #d1fae5;
+    --studio-danger: #ef4444;
+    --studio-danger-light: #fee2e2;
+    --studio-warn: #f59e0b;
+    --studio-warn-light: #fef3c7;
+    --studio-bg: #f8fafc;
+    --studio-card: #ffffff;
+    --studio-text: #0f172a;
+    --studio-muted: #64748b;
+    --studio-border: #e2e8f0;
+}
+
+.studio-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.studio-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--studio-primary) 0%, #4f46e5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+
+.studio-header p {
+    color: var(--studio-muted);
+    font-size: 1.1rem;
+}
+
+/* Operational Mode Selector Tabs */
+.mode-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.mode-tab {
+    padding: 0.75rem 1.5rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.95rem;
+    border: 2px solid var(--studio-border);
+    background: var(--studio-card);
+    color: var(--studio-muted);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.mode-tab:hover {
+    border-color: var(--studio-primary);
+    color: var(--studio-primary);
+    transform: translateY(-1px);
+}
+
+.mode-tab.active {
+    background: var(--studio-primary);
+    border-color: var(--studio-primary);
+    color: white;
+    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.4);
+}
+
+/* Studio Workspace Grid */
+.studio-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2rem;
+    align-items: start;
+    margin-bottom: 3rem;
+}
+
+@media (max-width: 992px) {
+    .studio-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.studio-card {
+    background: var(--studio-card);
+    border-radius: 24px;
+    padding: 1.75rem;
+    border: 1px solid var(--studio-border);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--studio-text);
+}
+
+.card-title i {
+    color: var(--studio-primary);
+}
+
+/* Camera and Stream Viewport */
+.video-wrapper {
+    position: relative;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    aspect-ratio: 4/3;
+    border: 2px solid var(--studio-border);
+}
+
+#webcam-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.camera-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(15, 23, 42, 0.85);
+    z-index: 10;
+}
+
+/* Prediction Output Area */
+.prediction-box {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--studio-bg);
+    border-radius: 16px;
+    border: 1px dashed var(--studio-border);
+}
+
+.pred-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--studio-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.pred-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.pred-label-orig {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--studio-text);
+}
+
+.pred-label-guj {
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--studio-primary);
+}
+
+.confidence-bar-container {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+}
+
+.confidence-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--studio-primary) 0%, #4f46e5 100%);
+    transition: width 0.3s ease;
+}
+
+.pred-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--studio-muted);
+}
+
+/* Confirm / Reject Actions */
+.confirm-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.btn-confirm {
+    flex: 1.5;
+    background: var(--studio-success);
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.btn-confirm:hover:not(:disabled) {
+    background: #059669;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+}
+
+.btn-reject {
+    flex: 1;
+    background: var(--studio-danger-light);
+    color: var(--studio-danger);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.75rem;
+    border-radius: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-reject:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+/* Gujarati Keyboard / Word Builder Workspace */
+.builder-workspace {
+    margin-top: 2rem;
+}
+
+.builder-input-wrapper {
+    position: relative;
+    border: 2px solid var(--studio-primary);
+    border-radius: 16px;
+    background: white;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1);
+}
+
+#builder-input {
+    width: 100%;
+    font-size: 2.2rem;
+    font-weight: 800;
+    color: var(--studio-primary);
+    border: none;
+    outline: none;
+    text-align: center;
+    background: transparent;
+    padding: 0.5rem 0;
+}
+
+.builder-controls {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 0.5rem;
+}
+
+.builder-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid var(--studio-border);
+    background: white;
+    color: var(--studio-text);
+}
+
+.builder-btn:hover {
+    border-color: var(--studio-primary);
+    color: var(--studio-primary);
+}
+
+.builder-btn.btn-action-primary {
+    background: var(--studio-primary);
+    color: white;
+    border-color: var(--studio-primary);
+}
+
+.builder-btn.btn-action-primary:hover {
+    background: #4f46e5;
+    color: white;
+}
+
+/* Keyboard Grids */
+.keyboard-section {
+    margin-top: 1rem;
+}
+
+.keyboard-tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+    border-bottom: 1px solid var(--studio-border);
+    padding-bottom: 0.5rem;
+}
+
+.kbd-tab {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    color: var(--studio-muted);
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.kbd-tab.active {
+    background: var(--studio-primary-light);
+    color: var(--studio-primary);
+}
+
+.keyboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+    gap: 6px;
+    max-height: 180px;
+    overflow-y: auto;
+    padding: 2px;
+}
+
+.key-cap {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    border: 1px solid var(--studio-border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+    color: var(--studio-text);
+}
+
+.key-cap:hover {
+    background: var(--studio-primary-light);
+    color: var(--studio-primary);
+    border-color: var(--studio-primary);
+    transform: scale(1.05);
+}
+
+.key-cap.matra-cap {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.key-cap.matra-cap:hover {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+/* History Snapshots */
+.history-feed-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: var(--studio-text);
+}
+
+.history-card {
+    background: var(--studio-card);
+    border: 1px solid var(--studio-border);
+    border-radius: 16px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.history-snapshot {
+    width: 80px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--studio-border);
+    background: #000;
+}
+
+.history-details {
+    flex: 1;
+}
+
+.hist-top {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--studio-muted);
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+}
+
+.hist-main {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.hist-orig {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--studio-muted);
+}
+
+.hist-guj {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: var(--studio-primary);
+}
+
+.btn-delete-hist {
+    position: absolute;
+    right: 1rem;
+    top: 1rem;
+    background: none;
+    border: none;
+    color: var(--studio-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.btn-delete-hist:hover {
+    color: var(--studio-danger);
+}
+
+.hidden {
+    display: none !important;
+}
+</style>
+
+<div class="studio-header">
+    <h1>Sign Language Studio</h1>
+    <p>Real-time Gujarati AI translation workspace & manual word creation interface</p>
+</div>
+
+<!-- Modes Selector Tabs -->
+<div class="mode-tabs">
+    <button class="mode-tab active" id="tab-letter" onclick="switchMode('alphabet')">
+        <i class="fa-solid fa-font"></i> Letter Detection
+    </button>
+    <button class="mode-tab" id="tab-word" onclick="switchMode('words')">
+        <i class="fa-solid fa-message"></i> Common Word Mode
+    </button>
+    <button class="mode-tab" id="tab-builder" onclick="switchMode('builder')">
+        <i class="fa-solid fa-keyboard"></i> Word Builder
+    </button>
+</div>
+
+<!-- Main Workspace -->
+<div class="studio-grid">
+    <!-- Left Column: Camera / Inputs -->
+    <div class="studio-card">
+        <div class="card-title">
+            <i class="fa-solid fa-video"></i>
+            <span id="video-card-title">Camera Feed (Letter Mode)</span>
+        </div>
+        
+        <div class="video-wrapper">
+            <video id="webcam-video" autoplay playsinline></video>
+            <div id="camera-overlay" class="camera-overlay">
+                <button id="start-camera-btn" class="btn btn-primary">Enable Webcam</button>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
+            <div style="display: flex; gap: 1rem; align-items: center;">
+                <button id="capture-btn" class="btn btn-primary" style="padding: 0.5rem 1rem;" disabled>Scan Frame</button>
+                <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 600; color: var(--studio-muted); cursor: pointer;">
+                    <input type="checkbox" id="auto-capture-toggle" disabled style="width:16px; height:16px;"> Auto-detect
+                </label>
+            </div>
+            
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span style="font-size:0.85rem; font-weight:700; color:var(--studio-muted);">Min Threshold:</span>
+                <select id="confidence-threshold" style="padding: 0.3rem; border-radius: 8px; border: 1px solid var(--studio-border); font-weight:600; outline:none;">
+                    <option value="40">40%</option>
+                    <option value="50">50%</option>
+                    <option value="60" selected>60%</option>
+                    <option value="70">70%</option>
+                    <option value="80">80%</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Predicton Results Box -->
+        <div id="detection-result-container" class="prediction-box">
+            <div class="pred-title">Detected Sign Shape</div>
+            <div class="pred-labels">
+                <div class="pred-label-orig" id="predicted-label">Waiting...</div>
+                <div class="pred-label-guj" id="predicted-gujarati">--</div>
+            </div>
+            <div class="confidence-bar-container">
+                <div class="confidence-bar-fill" id="confidence-fill"></div>
+            </div>
+            <div class="pred-meta">
+                <span id="confidence-percent">Confidence: --%</span>
+                <span id="status-message">Scan active</span>
+            </div>
+            
+            <!-- Confirm/Reject Panel -->
+            <div class="confirm-actions">
+                <button id="confirm-btn" class="btn-confirm" disabled>
+                    <i class="fa-solid fa-check"></i> <span id="confirm-btn-text">Confirm Prediction</span>
+                </button>
+                <button id="reject-btn" class="btn-reject" disabled>Reject</button>
+            </div>
+            
+            <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                <label style="display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; font-weight: 600; color: var(--studio-muted); cursor: pointer;">
+                    <input type="checkbox" id="auto-confirm-toggle" style="width:14px; height:14px;"> Auto-confirm predictions
+                </label>
+            </div>
+        </div>
+
+        <!-- manual Word Builder interface -->
+        <div id="builder-panel" class="builder-workspace hidden">
+            <div class="card-title">
+                <i class="fa-solid fa-keyboard"></i>
+                <span>Word Construction Workspace</span>
+            </div>
+            
+            <div class="builder-input-wrapper">
+                <input type="text" id="builder-input" readonly placeholder="અક્ષર જોડો...">
+                
+                <div class="builder-controls">
+                    <button class="builder-btn" onclick="appendSpace()">Space</button>
+                    <button class="builder-btn" onclick="backspaceBuilder()">Backspace</button>
+                    <button class="builder-btn" onclick="clearBuilder()" style="color:var(--studio-danger); border-color:rgba(239,68,68,0.2);">Clear</button>
+                    <button class="builder-btn btn-action-primary" id="btn-builder-tts">🔊 Listen</button>
+                    <button class="builder-btn btn-action-primary" id="btn-builder-translate">Translate</button>
+                    <button class="builder-btn btn-action-primary" id="btn-builder-save" style="background:var(--studio-success); border-color:var(--studio-success);">Save</button>
+                </div>
+            </div>
+
+            <!-- Virtual Keyboard -->
+            <div class="keyboard-section">
+                <div class="keyboard-tabs">
+                    <span class="kbd-tab active" id="tab-cons" onclick="showKeyboardCategory('cons')">Consonants (વ્યંજન)</span>
+                    <span class="kbd-tab" id="tab-vow" onclick="showKeyboardCategory('vow')">Vowels (સ્વર)</span>
+                    <span class="kbd-tab" id="tab-matra" onclick="showKeyboardCategory('matra')">Matras (માત્રા)</span>
+                </div>
+                
+                <!-- Consonants Grid -->
+                <div id="grid-cons" class="keyboard-grid"></div>
+                <!-- Vowels Grid -->
+                <div id="grid-vow" class="keyboard-grid hidden"></div>
+                <!-- Matras Grid -->
+                <div id="grid-matra" class="keyboard-grid hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: History Feed -->
+    <div class="studio-card">
+        <div class="card-title">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span>Confirmed Activity History</span>
+        </div>
+        
+        <div id="history-feed" style="max-height: 520px; overflow-y: auto; padding-right: 0.5rem;">
+            <p style="color: var(--studio-muted); text-align: center; margin-top: 2rem;">No entries saved in history yet.</p>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // System variables
+    let activeMode = 'alphabet'; // 'alphabet', 'words', or 'builder'
+    let currentImageBase64 = '';
+    let predictedLabel = '';
+    let translatedGujarati = '';
+    let predictedConfidence = 0;
+    
+    // Auto-detect & stabilization variables
+    let autoDetectInterval = null;
+    let stabilizationCounter = 0;
+    let lastUnconfirmedLabel = '';
+
+    // Mapped Gujarati letters
+    const alphabetMapping = {
+        'A': 'અ', 'B': 'બ', 'C': 'ક', 'D': 'ડ', 'E': 'ઇ',
+        'F': 'ફ', 'G': 'ગ', 'H': 'હ', 'I': 'ઈ', 'J': 'જ',
+        'K': 'ક', 'L': 'લ', 'M': 'મ', 'N': 'ન', 'O': 'ઓ',
+        'P': 'પ', 'Q': 'ક', 'R': 'ર', 'S': 'સ', 'T': 'ટ',
+        'U': 'ઉ', 'V': 'વ', 'W': 'ડ', 'X': 'ક', 'Y': 'ય', 'Z': 'ઝ'
+    };
+
+    // Keyboard values
+    const consonants = [
+        'ક', 'ખ', 'ગ', 'ઘ', 'ચ', 'છ', 'જ', 'ઝ', 'ટ', 'ઠ', 'ડ', 'ઢ', 'ણ',
+        'ત', 'થ', 'દ', 'ધ', 'ન', 'પ', 'ફ', 'બ', 'ભ', 'મ', 'ય', 'ર', 'લ',
+        'વ', 'શ', 'ષ', 'સ', 'હ', 'ળ', 'ક્ષ', 'જ્ઞ'
+    ];
+    
+    const vowels = ['અ', 'આ', 'ઇ', 'ઈ', 'ઉ', 'ઊ', 'એ', 'ઐ', 'ઓ', 'ઔ'];
+    
+    const matras = [
+        {char: 'ા', name: 'aa'},
+        {char: 'િ', name: 'i'},
+        {char: 'ી', name: 'ee'},
+        {char: 'ુ', name: 'u'},
+        {char: 'ૂ', name: 'oo'},
+        {char: 'ે', name: 'e'},
+        {char: 'ૈ', name: 'ai'},
+        {char: 'ો', name: 'o'},
+        {char: 'ૌ', name: 'au'},
+        {char: 'ં', name: 'anusvara'},
+        {char: 'ઃ', name: 'visarga'},
+        {char: 'ૃ', name: 'ru'},
+        {char: '્', name: 'halant'}
+    ];
+
+    // Element nodes
+    const video = document.getElementById('webcam-video');
+    const startCamBtn = document.getElementById('start-camera-btn');
+    const cameraOverlay = document.getElementById('camera-overlay');
+    const captureBtn = document.getElementById('capture-btn');
+    const autoCaptureToggle = document.getElementById('auto-capture-toggle');
+    const thresholdSelect = document.getElementById('confidence-threshold');
+    
+    const labelLabel = document.getElementById('predicted-label');
+    const labelGujarati = document.getElementById('predicted-gujarati');
+    const confidencePercent = document.getElementById('confidence-percent');
+    const confidenceFill = document.getElementById('confidence-fill');
+    const statusMessage = document.getElementById('status-message');
+    
+    const confirmBtn = document.getElementById('confirm-btn');
+    const confirmBtnText = document.getElementById('confirm-btn-text');
+    const rejectBtn = document.getElementById('reject-btn');
+    const autoConfirmToggle = document.getElementById('auto-confirm-toggle');
+    
+    const builderPanel = document.getElementById('builder-panel');
+    const builderInput = document.getElementById('builder-input');
+    
+    const historyFeed = document.getElementById('history-feed');
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Initialize Keyboard Grids
+    document.addEventListener("DOMContentLoaded", () => {
+        setupKeyboard();
+        loadHistory();
+        
+        // Setup global WebSocket listener for history updates
+        const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const wsUrl = protocol + window.location.host + '/ws/live/';
+        if (!window.location.pathname.includes('login') && !window.location.pathname.includes('register')) {
+            const socket = new WebSocket(wsUrl);
+            socket.onmessage = function(e) {
+                const payload = JSON.parse(e.data);
+                if (payload.type === 'history_update') {
+                    showToast(`Activity Confirmed!`);
+                    loadHistory();
+                }
+            };
+        }
+    });
+
+    // Setup virtual keyboard grids
+    function setupKeyboard() {
+        const gridCons = document.getElementById('grid-cons');
+        const gridVow = document.getElementById('grid-vow');
+        const gridMatra = document.getElementById('grid-matra');
+        
+        gridCons.innerHTML = consonants.map(c => `<button class="key-cap" onclick="appendCharacter('${c}')">${c}</button>`).join('');
+        gridVow.innerHTML = vowels.map(v => `<button class="key-cap" onclick="appendCharacter('${v}')">${v}</button>`).join('');
+        gridMatra.innerHTML = matras.map(m => `<button class="key-cap matra-cap" onclick="appendCharacter('${m.char}')" title="${m.name}">${m.char}</button>`).join('');
+    }
+
+    function showKeyboardCategory(category) {
+        document.querySelectorAll('.kbd-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.keyboard-grid').forEach(g => g.classList.add('hidden'));
+        
+        document.getElementById(`tab-${category}`).classList.add('active');
+        document.getElementById(`grid-${category}`).classList.remove('hidden');
+    }
+
+    // Switch workflow modes
+    function switchMode(mode) {
+        activeMode = mode;
+        
+        document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+        
+        // Reset detection boxes
+        resetPrediction();
+        
+        if (mode === 'alphabet') {
+            document.getElementById('tab-letter').classList.add('active');
+            document.getElementById('video-card-title').textContent = "Camera Feed (Letter Mode)";
+            document.getElementById('detection-result-container').classList.remove('hidden');
+            builderPanel.classList.remove('hidden'); // keep keyboard visible to see letters added
+            confirmBtnText.textContent = "Add to Builder";
+        } else if (mode === 'words') {
+            document.getElementById('tab-word').classList.add('active');
+            document.getElementById('video-card-title').textContent = "Camera Feed (Common Word Mode)";
+            document.getElementById('detection-result-container').classList.remove('hidden');
+            builderPanel.classList.add('hidden');
+            confirmBtnText.textContent = "Confirm & Save Word";
+        } else if (mode === 'builder') {
+            document.getElementById('tab-builder').classList.add('active');
+            document.getElementById('video-card-title').textContent = "Manual Construction Grid";
+            document.getElementById('detection-result-container').classList.add('hidden');
+            builderPanel.classList.remove('hidden');
+        }
+    }
+
+    // Enable Camera
+    startCamBtn.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            cameraOverlay.style.display = 'none';
+            captureBtn.disabled = false;
+            autoCaptureToggle.disabled = false;
+        } catch (err) {
+            console.error(err);
+            cameraOverlay.innerHTML = "<p class='error-text' style='color:white; font-weight:700;'>Camera access denied.</p>";
+        }
+    });
+
+    // Capture Base64 Webcam snapshot
+    function captureFrame() {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        return canvas.toDataURL('image/jpeg', 0.65);
+    }
+
+    // Capture & Detect API call
+    async function triggerDetection() {
+        if (!video.srcObject) return;
+        
+        statusMessage.textContent = "Scanning frame...";
+        const frameB64 = captureFrame();
+        currentImageBase64 = frameB64;
+        
+        try {
+            const response = await fetch('/api/gesture/detect/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ 
+                    image_base64: frameB64,
+                    mode: activeMode === 'alphabet' ? 'alphabet' : 'words'
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                predictedLabel = data.label;
+                translatedGujarati = data.gujarati || data.label;
+                predictedConfidence = data.confidence || 0.0;
+                
+                labelLabel.textContent = predictedLabel;
+                labelGujarati.textContent = translatedGujarati;
+                
+                let pct = predictedConfidence;
+                if (pct <= 1.0) pct *= 100;
+                confidencePercent.textContent = `Confidence: ${pct.toFixed(0)}%`;
+                confidenceFill.style.width = `${pct}%`;
+                
+                const minThreshold = parseFloat(thresholdSelect.value);
+                
+                if (pct >= minThreshold) {
+                    confirmBtn.disabled = false;
+                    rejectBtn.disabled = false;
+                    statusMessage.textContent = "High confidence prediction detected!";
+                    statusMessage.style.color = "var(--studio-success)";
+                    
+                    // Stabilization check
+                    if (predictedLabel === lastUnconfirmedLabel) {
+                        stabilizationCounter++;
+                    } else {
+                        lastUnconfirmedLabel = predictedLabel;
+                        stabilizationCounter = 1;
+                    }
+                    
+                    // Auto-confirm logic
+                    if (autoConfirmToggle.checked && stabilizationCounter >= 3) {
+                        confirmPrediction();
+                        stabilizationCounter = 0;
+                    }
+                } else {
+                    confirmBtn.disabled = true;
+                    rejectBtn.disabled = true;
+                    statusMessage.textContent = `Confidence too low (under ${minThreshold}%)`;
+                    statusMessage.style.color = "var(--studio-muted)";
+                }
+            } else {
+                resetPrediction();
+                statusMessage.textContent = data.message || "No hands or dynamic sequence detected.";
+                statusMessage.style.color = "var(--studio-danger)";
+            }
+        } catch (err) {
+            console.error(err);
+            statusMessage.textContent = "AI module connection timeout.";
+        }
+    }
+
+    captureBtn.addEventListener('click', () => {
+        triggerDetection();
+    });
+
+    // Auto-capture toggle interval
+    autoCaptureToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            autoDetectInterval = setInterval(triggerDetection, 1500);
+            captureBtn.disabled = true;
+        } else {
+            clearInterval(autoDetectInterval);
+            autoDetectInterval = null;
+            captureBtn.disabled = false;
+        }
+    });
+
+    // Reset layout
+    function resetPrediction() {
+        labelLabel.textContent = "Waiting...";
+        labelGujarati.textContent = "--";
+        confidencePercent.textContent = "Confidence: --%";
+        confidenceFill.style.width = "0%";
+        confirmBtn.disabled = true;
+        rejectBtn.disabled = true;
+        statusMessage.textContent = "Scan active";
+        statusMessage.style.color = "var(--studio-muted)";
+        stabilizationCounter = 0;
+        lastUnconfirmedLabel = '';
+    }
+
+    // Confirm Prediction Logic
+    function confirmPrediction() {
+        if (!predictedLabel) return;
+        
+        if (activeMode === 'alphabet') {
+            // Letter mode: Map predicted letter to Gujarati and add to builder input box
+            const gujChar = alphabetMapping[predictedLabel.toUpperCase()] || predictedLabel;
+            appendCharacter(gujChar);
+            showToast(`Added letter '${gujChar}' to word construction`);
+            resetPrediction();
+        } else if (activeMode === 'words') {
+            // Word mode: Save directly to confirmed history
+            saveToHistory(predictedLabel, translatedGujarati, predictedConfidence, currentImageBase64);
+            resetPrediction();
+        }
+    }
+
+    confirmBtn.addEventListener('click', confirmPrediction);
+    rejectBtn.addEventListener('click', () => {
+        resetPrediction();
+        showToast("Prediction rejected.", true);
+    });
+
+    // manual Typing / construction helpers
+    function appendCharacter(char) {
+        builderInput.value += char;
+    }
+
+    function appendSpace() {
+        builderInput.value += ' ';
+    }
+
+    function backspaceBuilder() {
+        const val = builderInput.value;
+        if (val.length > 0) {
+            builderInput.value = val.slice(0, -1);
+        }
+    }
+
+    function clearBuilder() {
+        builderInput.value = '';
+    }
+
+    // Speak Constructed Word (TTS)
+    document.getElementById('btn-builder-tts').addEventListener('click', async () => {
+        const text = builderInput.value.trim();
+        if (!text) return;
+        
+        const btn = document.getElementById('btn-builder-tts');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/translator/voice/text-to-speech/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ text: text, language: 'gu' })
+            });
+            const data = await response.json();
+            if (response.ok && data.success && data.audio_base64) {
+                const audio = new Audio("data:audio/mp3;base64," + data.audio_base64);
+                await audio.play();
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                return;
+            }
+        } catch (err) {
+            console.error("Backend TTS error:", err);
+        }
+        
+        // Fallback SpeechSynthesis
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.lang = 'gu-IN';
+            msg.onend = () => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            };
+            msg.onerror = () => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            };
+            window.speechSynthesis.speak(msg);
+        } else {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            showToast("TTS not supported", true);
+        }
+    });
+
+    // Translate constructed word to English
+    document.getElementById('btn-builder-translate').addEventListener('click', async () => {
+        const text = builderInput.value.trim();
+        if (!text) return;
+        
+        const btn = document.getElementById('btn-builder-translate');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Translating...';
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('/api/translator/translate/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({ 
+                    text: text,
+                    source_language: 'gu',
+                    target_language: 'en'
+                })
+            });
+
+            const data = await response.json();
+            if (response.ok) {
+                showToast(`Translation: ${data.translated}`);
+                // Briefly display English translation in placeholder
+                const oldVal = builderInput.value;
+                builderInput.value = data.translated;
+                setTimeout(() => {
+                    builderInput.value = oldVal;
+                }, 3000);
+            } else {
+                showToast("Translation error", true);
+            }
+        } catch (err) {
+            console.error(err);
+            showToast("API connection error", true);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    // Save manual builder word to history
+    document.getElementById('btn-builder-save').addEventListener('click', () => {
+        const text = builderInput.value.trim();
+        if (!text) return;
+        // Since it's manually built, we translate it back to English first for history records
+        saveToHistory(text, text, 1.0, '');
+        clearBuilder();
+    });
+
+    // Save confirmed predictions & builder words to history Database
+    async function saveToHistory(english, gujarati, confidence, base64Snapshot) {
+        try {
+            const response = await fetch('/api/history/list/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify({
+                    english_text: english,
+                    gujarati_text: gujarati,
+                    source_type: 'Gesture',
+                    confidence: confidence,
+                    image_base64: base64Snapshot
+                })
+            });
+            
+            if (response.ok) {
+                showToast("Saved successfully!");
+                loadHistory();
+            } else {
+                showToast("Failed to save entry to database", true);
+            }
+        } catch (err) {
+            console.error("Save history error:", err);
+            showToast("Network save error", true);
+        }
+    }
+
+    // Load history Card Feed
+    async function loadHistory() {
+        try {
+            const response = await fetch('/api/history/list/', {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                if (data.length === 0) {
+                    historyFeed.innerHTML = `<p style="color: var(--studio-muted); text-align: center; margin-top: 2rem;">No entries saved in history yet.</p>`;
+                    return;
+                }
+                
+                historyFeed.innerHTML = data.map(item => {
+                    const imgTag = item.detected_image 
+                        ? `<img class="history-snapshot" src="${item.detected_image}" alt="Sign Snapshot">`
+                        : `<div class="history-snapshot" style="display:flex; align-items:center; justify-content:center; background:#4f46e5; color:white; font-size:1.5rem;"><i class="fa-solid fa-hands"></i></div>`;
+                    
+                    const confVal = parseFloat(item.confidence || 0);
+                    const confPct = confVal <= 1.0 ? confVal * 100 : confVal;
+                    const date = new Date(item.created_at);
+                    const formattedDate = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " - " + date.toLocaleDateString();
+
+                    return `
+                        <div class="history-card">
+                            ${imgTag}
+                            <div class="history-details">
+                                <div class="hist-top">
+                                    <span>${item.source_type} Input (${confPct.toFixed(0)}% accuracy)</span>
+                                    <span>${formattedDate}</span>
+                                </div>
+                                <div class="hist-main">
+                                    <span class="hist-orig">${item.english_text}</span>
+                                    <i class="fa-solid fa-arrow-right-long" style="color:var(--studio-muted); font-size:0.8rem;"></i>
+                                    <span class="hist-guj">${item.gujarati_text}</span>
+                                </div>
+                            </div>
+                            <button class="btn-delete-hist" onclick="deleteHistoryItem(${item.id})" title="Delete Activity">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        } catch (err) {
+            console.error("Load history feed error:", err);
+        }
+    }
+
+    async function deleteHistoryItem(id) {
+        try {
+            const response = await fetch(`/api/history/list/${id}/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': csrfToken
+                }
+            });
+            if (response.ok) {
+                showToast("Activity deleted");
+                loadHistory();
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
+</script>
+{% endblock %}

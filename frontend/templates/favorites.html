@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="card">
+    <h2>Favorite Phrases</h2>
+    <p>Your saved quick-access phrases.</p>
+
+    <div id="favorites-container" class="grid" style="grid-template-columns: 1fr;">
+        <!-- Filled by JS -->
+        <p>Loading favorites...</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function loadFavorites() {
+    const { response, data } = await apiFetch('/api/history/favorites/');
+    const container = document.getElementById('favorites-container');
+    
+    if (response.ok) {
+        if (data.length === 0) {
+            container.innerHTML = "<p>No favorites found.</p>";
+            return;
+        }
+
+        container.innerHTML = data.map(item => `
+            <div class="result-box" style="margin-top: 10px; position:relative;">
+                <strong>${item.english_text}</strong>
+                <p style="font-size: 1.5rem; margin-top: 5px;">${item.gujarati_text || 'N/A'}</p>
+            </div>
+        `).join('');
+    } else {
+        container.innerHTML = "<p>Error loading favorites.</p>";
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadFavorites);
+</script>
+{% endblock %}

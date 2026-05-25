@@ -1,0 +1,498 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<style>
+/* Premium CSS styles for History page */
+:root {
+    --hist-primary: #8b5cf6;
+    --hist-bg: #f8fafc;
+    --hist-card: #ffffff;
+    --hist-border: #e2e8f0;
+    --hist-text: #1e293b;
+    --hist-muted: #64748b;
+    --hist-success: #10b981;
+}
+
+.history-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+.history-header h1 {
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--hist-primary) 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 0.5rem;
+}
+.history-header p {
+    color: var(--hist-muted);
+    font-size: 1.1rem;
+}
+
+/* Stats Container */
+.stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+.stat-card {
+    background: var(--hist-card);
+    border: 1px solid var(--hist-border);
+    border-radius: 16px;
+    padding: 1.25rem;
+    text-align: center;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.stat-val {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--hist-primary);
+}
+.stat-lbl {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--hist-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 0.25rem;
+}
+
+/* Controls (Filters & Search) */
+.controls-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+.filter-tabs {
+    display: flex;
+    gap: 0.5rem;
+}
+.filter-tab {
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: 1px solid var(--hist-border);
+    background: var(--hist-card);
+    color: var(--hist-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.filter-tab:hover {
+    border-color: var(--hist-primary);
+    color: var(--hist-primary);
+}
+.filter-tab.active {
+    background: var(--hist-primary);
+    color: white;
+    border-color: var(--hist-primary);
+}
+.search-wrapper {
+    position: relative;
+    max-width: 320px;
+    width: 100%;
+}
+.search-input {
+    width: 100%;
+    padding: 0.6rem 1rem 0.6rem 2.2rem;
+    border-radius: 10px;
+    border: 1px solid var(--hist-border);
+    outline: none;
+    font-weight: 500;
+}
+.search-input:focus {
+    border-color: var(--hist-primary);
+}
+.search-icon {
+    position: absolute;
+    left: 0.8rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--hist-muted);
+    font-size: 0.9rem;
+}
+
+/* Grid of Cards */
+.history-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+}
+.history-item-card {
+    background: var(--hist-card);
+    border: 1px solid var(--hist-border);
+    border-radius: 20px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+    animation: slideIn 0.3s ease-out;
+}
+.history-item-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+.history-thumb-container {
+    width: 100px;
+    height: 75px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid var(--hist-border);
+    background: #000;
+    cursor: pointer;
+}
+.history-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.history-details-pane {
+    flex: 1;
+}
+.hist-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: var(--hist-muted);
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+}
+.badge-source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #f1f5f9;
+    color: #475569;
+}
+.badge-source.gesture {
+    background: #e0e7ff;
+    color: #4f46e5;
+}
+.badge-source.text {
+    background: #f5f3ff;
+    color: #8b5cf6;
+}
+.badge-source.speech {
+    background: #ecfdf5;
+    color: #059669;
+}
+.badge-accuracy {
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    background: #ecfdf5;
+    color: #047857;
+}
+.hist-content {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+.hist-english {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--hist-muted);
+}
+.hist-gujarati {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--hist-primary);
+}
+.btn-delete-item {
+    background: none;
+    border: none;
+    color: var(--hist-muted);
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.btn-delete-item:hover {
+    color: #ef4444;
+    background: #fee2e2;
+}
+
+/* Modal for Image Preview */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.9);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.modal.open {
+    opacity: 1;
+    pointer-events: auto;
+}
+.modal-content {
+    max-width: 90%;
+    max-height: 80%;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+    background: #000;
+}
+.modal-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+</style>
+
+<div class="history-header">
+    <h1>Communication History</h1>
+    <p>View, filter, and audit your saved translations and sign language gesture captures</p>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-container">
+    <div class="stat-card">
+        <div class="stat-val" id="stat-total">0</div>
+        <div class="stat-lbl">Total Entries</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-val" id="stat-gestures">0</div>
+        <div class="stat-lbl">Gestures Detected</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-val" id="stat-accuracy">--%</div>
+        <div class="stat-lbl">Avg. Gesture Accuracy</div>
+    </div>
+</div>
+
+<!-- Controls -->
+<div class="controls-bar">
+    <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterHistory('all')" id="filter-all">All Inputs</button>
+        <button class="filter-tab" onclick="filterHistory('Gesture')" id="filter-gesture">Gestures</button>
+        <button class="filter-tab" onclick="filterHistory('Text')" id="filter-text">Text</button>
+        <button class="filter-tab" onclick="filterHistory('Speech')" id="filter-speech">Speech</button>
+    </div>
+    
+    <div class="search-wrapper">
+        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+        <input type="text" id="search-input" class="search-input" placeholder="Search words..." oninput="handleSearch()">
+    </div>
+</div>
+
+<!-- Main Feed -->
+<div id="history-container" class="history-grid">
+    <p style="text-align:center; color:var(--hist-muted); margin-top:2rem;">Loading history entries...</p>
+</div>
+
+<!-- Image Modal -->
+<div id="image-modal" class="modal" onclick="closeModal()">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <img id="modal-img" class="modal-content" src="" alt="Full Snapshot View" onclick="event.stopPropagation()">
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allHistoryData = [];
+let activeFilter = 'all';
+let searchQuery = '';
+
+async function loadHistory() {
+    const { response, data } = await apiFetch('/api/history/list/');
+    const container = document.getElementById('history-container');
+    
+    if (response.ok) {
+        allHistoryData = data;
+        updateStatistics(data);
+        renderHistory();
+    } else {
+        container.innerHTML = `<p style="text-align:center; color:#ef4444; margin-top:2rem;">Failed to retrieve history.</p>`;
+    }
+}
+
+function updateStatistics(data) {
+    document.getElementById('stat-total').textContent = data.length;
+    
+    const gestures = data.filter(item => item.source_type === 'Gesture');
+    document.getElementById('stat-gestures').textContent = gestures.length;
+    
+    if (gestures.length > 0) {
+        const sumConf = gestures.reduce((sum, item) => {
+            const conf = parseFloat(item.confidence || 0);
+            return sum + (conf <= 1.0 ? conf * 100 : conf);
+        }, 0);
+        const avg = sumConf / gestures.length;
+        document.getElementById('stat-accuracy').textContent = `${avg.toFixed(0)}%`;
+    } else {
+        document.getElementById('stat-accuracy').textContent = '--%';
+    }
+}
+
+function filterHistory(filterType) {
+    activeFilter = filterType;
+    document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
+    
+    const btnMap = {
+        'all': 'filter-all',
+        'Gesture': 'filter-gesture',
+        'Text': 'filter-text',
+        'Speech': 'filter-speech'
+    };
+    
+    document.getElementById(btnMap[filterType]).classList.add('active');
+    renderHistory();
+}
+
+function handleSearch() {
+    searchQuery = document.getElementById('search-input').value.toLowerCase().trim();
+    renderHistory();
+}
+
+function renderHistory() {
+    const container = document.getElementById('history-container');
+    
+    // Filter and search
+    let filtered = allHistoryData;
+    if (activeFilter !== 'all') {
+        filtered = filtered.filter(item => item.source_type === activeFilter);
+    }
+    
+    if (searchQuery) {
+        filtered = filtered.filter(item => 
+            item.english_text.toLowerCase().includes(searchQuery) ||
+            item.gujarati_text.toLowerCase().includes(searchQuery)
+        );
+    }
+    
+    if (filtered.length === 0) {
+        container.innerHTML = `<p style="text-align:center; color:var(--hist-muted); margin-top:2rem; padding: 2rem; background:white; border-radius:16px; border:1px solid var(--hist-border);">No entries found matching criteria.</p>`;
+        return;
+    }
+    
+    container.innerHTML = filtered.map(item => {
+        // Thumbnail or icon
+        let thumbContent = '';
+        if (item.detected_image) {
+            thumbContent = `<div class="history-thumb-container" onclick="openModal('${item.detected_image}')"><img class="history-thumb" src="${item.detected_image}" alt="Snapshot"></div>`;
+        } else {
+            let iconClass = 'fa-keyboard';
+            let color = '#8b5cf6';
+            let bg = '#f5f3ff';
+            if (item.source_type === 'Gesture') {
+                iconClass = 'fa-hands-asl-interpreting';
+                color = '#4f46e5';
+                bg = '#e0e7ff';
+            } else if (item.source_type === 'Speech') {
+                iconClass = 'fa-microphone';
+                color = '#059669';
+                bg = '#ecfdf5';
+            }
+            thumbContent = `<div class="history-thumb-container" style="display:flex; align-items:center; justify-content:center; background:${bg}; color:${color}; font-size:1.6rem;"><i class="fa-solid ${iconClass}"></i></div>`;
+        }
+        
+        // Confidence badge for gesture
+        let accuracyBadge = '';
+        if (item.source_type === 'Gesture') {
+            const confVal = parseFloat(item.confidence || 0);
+            const confPct = confVal <= 1.0 ? confVal * 100 : confVal;
+            accuracyBadge = `<span class="badge-accuracy">${confPct.toFixed(0)}% accuracy</span>`;
+        }
+        
+        // Formatted timestamp
+        const date = new Date(item.created_at);
+        const formattedDate = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " - " + date.toLocaleDateString();
+        
+        // CSS badge source modifier class
+        const srcLower = (item.source_type || 'Text').toLowerCase();
+        
+        return `
+            <div class="history-item-card">
+                ${thumbContent}
+                <div class="history-details-pane">
+                    <div class="hist-header">
+                        <span class="badge-source ${srcLower}">
+                            <i class="fa-solid ${getIconForSource(item.source_type)}"></i> ${item.source_type}
+                        </span>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            ${accuracyBadge}
+                            <span>${formattedDate}</span>
+                        </div>
+                    </div>
+                    <div class="hist-content">
+                        <span class="hist-english">${item.english_text}</span>
+                        <i class="fa-solid fa-arrow-right-long" style="color:var(--hist-muted); font-size:0.85rem;"></i>
+                        <span class="hist-gujarati">${item.gujarati_text}</span>
+                    </div>
+                </div>
+                <button class="btn-delete-item" onclick="deleteHistory(${item.id})" title="Delete Entry">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function getIconForSource(source) {
+    if (source === 'Gesture') return 'fa-hands-asl-interpreting';
+    if (source === 'Speech') return 'fa-microphone';
+    return 'fa-keyboard';
+}
+
+async function deleteHistory(id) {
+    const { response } = await apiFetch(`/api/history/list/${id}/`, { method: 'DELETE' });
+    if (response.ok) {
+        showToast("Deleted successfully");
+        loadHistory();
+    } else {
+        showToast("Failed to delete entry", true);
+    }
+}
+
+function openModal(imgUrl) {
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-img');
+    modalImg.src = imgUrl;
+    modal.classList.add('open');
+}
+
+function closeModal() {
+    document.getElementById('image-modal').classList.remove('open');
+}
+
+// Expose loadHistory globally so WebSocket in main.js can trigger reload
+window.loadHistory = loadHistory;
+
+document.addEventListener("DOMContentLoaded", loadHistory);
+</script>
+{% endblock %}

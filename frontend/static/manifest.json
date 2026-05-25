@@ -1,0 +1,17 @@
+{
+    "name": "Communicate Accessibility App",
+    "short_name": "Communicate",
+    "description": "An accessibility application bridging communication gaps for deaf and mute individuals.",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "theme_color": "#4CAF50",
+    "background_color": "#ffffff",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/2875/2875071.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+Django>=4.2,<5.0
+djangorestframework>=3.14.0
+django-cors-headers>=4.3.0
+python-dotenv>=1.0.0
+deep-translator>=1.11.4
+mediapipe>=0.10.0
+opencv-python>=4.8.0
+channels>=4.0.0
+daphne>=4.0.0
+tensorflow>=2.12.0
+cvzone>=1.5.6
+gtts>=2.3.2
+SpeechRecognition>=3.10.0
+pydub>=0.25.1
+textblob>=0.17.1
+langdetect>=1.0.9

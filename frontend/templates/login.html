@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Login | SignTranslate{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px; padding: 60px 20px;">
+    <div class="card-pastel">
+        <h2 class="section-title" style="margin-bottom: 20px;">Welcome Back</h2>
+        <div id="login-error" class="status-message" style="display:none; color: var(--error); background: #fee2e2;"></div>
+        
+        <form id="login-form">
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="username" style="display:block; font-weight:600; margin-bottom: 8px;">Username</label>
+                <input type="text" id="username" class="form-control" required style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 30px;">
+                <label for="password" style="display:block; font-weight:600; margin-bottom: 8px;">Password</label>
+                <input type="password" id="password" class="form-control" required style="width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem;">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+        </form>
+        
+        <p class="text-center mt-4">Don't have an account? <a href="{% url 'register-page' %}">Register here</a></p>
+    </div>
+</div>
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Logging in...';
+        
+        const payload = {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        };
+
+        try {
+            const response = await fetch('/api/users/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // Login via Django sessions requires a full page reload to authenticate browser
+                window.location.href = "{% url 'dashboard' %}";
+            } else {
+                const errDiv = document.getElementById('login-error');
+                errDiv.textContent = data.error || "Invalid username or password.";
+                errDiv.style.display = "block";
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Login';
+            }
+        } catch(err) {
+            console.error(err);
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Login';
+        }
+    });
+</script>
+{% endblock %}

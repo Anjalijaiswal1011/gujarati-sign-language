@@ -1,0 +1,874 @@
+/*
+ * Gesture Page — Real-Time Sign Translation Dashboard
+ * Inspired by sign.mt's clean translation workspace aesthetic
+ * Focus: English Sign → Gujarati output, premium cards, live feel
+ * Scope: This file affects ONLY the gesture/demo page
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Noto+Sans+Gujarati:wght@400;700&display=swap');
+
+/* =====================================================
+   DESIGN TOKENS — Gesture Page Variables
+   ===================================================== */
+:root {
+    --g-bg:           #f0f4ff;
+    --g-card:         #ffffff;
+    --g-border:       #e2e8f0;
+    --g-primary:      #6366f1;    /* Indigo 500 */
+    --g-violet:       #8b5cf6;    /* Violet 500 */
+    --g-gj-accent:    #7c3aed;    /* Gujarati output accent */
+    --g-gj-bg:        #faf5ff;    /* Gujarati panel background */
+    --g-brand-light:  #eef2ff;
+    --g-text:         #0f172a;
+    --g-muted:        #64748b;
+    --g-success:      #10b981;
+    --g-error:        #ef4444;
+    --g-warning:      #f59e0b;
+    --g-shadow-sm:    0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+    --g-shadow-md:    0 10px 25px -5px rgb(0 0 0 / 0.08), 0 4px 10px -6px rgb(0 0 0 / 0.08);
+    --g-shadow-lg:    0 25px 50px -12px rgb(0 0 0 / 0.15);
+    --g-radius:       20px;
+    --g-radius-sm:    12px;
+}
+
+/* =====================================================
+   BASE — Scope the body padding to gesture page only
+   ===================================================== */
+main.container {
+    padding-top: 1.5rem;
+    padding-bottom: 3rem;
+}
+
+/* =====================================================
+   PAGE HEADER — Title, language route, status badge
+   ===================================================== */
+.gesture-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    gap: 1.5rem;
+}
+
+.gesture-header-text h1 {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2rem;
+    font-weight: 800;
+    margin: 0.5rem 0 0.35rem;
+    background: linear-gradient(135deg, var(--g-primary) 0%, var(--g-violet) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.2;
+}
+
+.gesture-header-text p {
+    color: var(--g-muted);
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* Language Route Badge (EN → gu) */
+.language-route-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.lang-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.85rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+}
+
+.lang-chip.lang-en {
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+}
+
+.lang-chip.lang-gj {
+    background: #faf5ff;
+    color: var(--g-gj-accent);
+    border: 1px solid #ddd6fe;
+}
+
+.lang-arrow {
+    color: var(--g-muted);
+    font-size: 0.75rem;
+}
+
+/* Status Badge */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: var(--g-radius-sm);
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    white-space: nowrap;
+}
+
+.status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.status-disconnected {
+    background: #fef2f2;
+    color: var(--g-error);
+    border-color: #fecaca;
+}
+.status-disconnected .status-dot {
+    background: var(--g-error);
+}
+
+.status-connected {
+    background: #f0fdf4;
+    color: var(--g-success);
+    border-color: #bbf7d0;
+}
+.status-connected .status-dot {
+    background: var(--g-success);
+    animation: status-pulse 2s infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* =====================================================
+   DASHBOARD GRID — Two column layout
+   ===================================================== */
+.gesture-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 1.75rem;
+    align-items: start;
+}
+
+/* =====================================================
+   CARD BASE — Used by all panels on this page
+   ===================================================== */
+.g-card {
+    background: var(--g-card);
+    border-radius: var(--g-radius);
+    padding: 1.5rem;
+    border: 1px solid var(--g-border);
+    box-shadow: var(--g-shadow-md);
+}
+
+.g-card + .g-card {
+    margin-top: 1.5rem;
+}
+
+/* Card Header row */
+.g-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 1.25rem;
+}
+
+.g-card-header i {
+    color: var(--g-primary);
+    font-size: 1.1rem;
+    flex-shrink: 0;
+}
+
+.g-card-header h2 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0;
+    flex: 1;
+}
+
+/* Translation language tag in card header */
+.translation-lang-tag {
+    font-family: 'Noto Sans Gujarati', 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--g-primary), var(--g-violet));
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+/* =====================================================
+   CAMERA CARD — Viewport, live badge, standby state
+   ===================================================== */
+.camera-card {
+    padding-bottom: 1.25rem;
+}
+
+/* Camera viewport wrapper */
+.camera-viewport {
+    position: relative;
+    background: #0a0a1a;
+    border-radius: 16px;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    border: 2px solid #1e1e3a;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.03);
+}
+
+/* The video element */
+#webcam {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Live indicator badge overlay */
+.live-badge {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    display: none; /* shown by JS when camera is on */
+    align-items: center;
+    gap: 0.45rem;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(8px);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    z-index: 5;
+}
+
+.live-badge.visible {
+    display: flex;
+}
+
+.live-pulse {
+    width: 7px;
+    height: 7px;
+    background: #ef4444;
+    border-radius: 50%;
+    animation: live-anim 1.4s infinite;
+}
+
+@keyframes live-anim {
+    0%   { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,0.7); }
+    70%  { transform: scale(1);    box-shadow: 0 0 0 8px rgba(239,68,68,0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+
+/* Standby overlay when camera is off */
+.camera-standby {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,0.45);
+    gap: 0.5rem;
+    text-align: center;
+    z-index: 4;
+}
+
+.camera-standby i {
+    font-size: 2rem;
+    opacity: 0.6;
+}
+
+.camera-standby p {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.camera-standby small {
+    font-size: 0.78rem;
+    opacity: 0.75;
+}
+
+/* Hidden state for standby when camera is active */
+.camera-standby.hidden {
+    display: none;
+}
+
+/* Camera active dot in card header */
+.camera-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--g-border);
+    margin-left: auto;
+    transition: background 0.3s;
+}
+
+.camera-status-dot.active {
+    background: var(--g-success);
+    animation: status-pulse 2s infinite;
+}
+
+/* Error banner */
+.error-banner {
+    display: none;
+    background: #fef2f2;
+    color: var(--g-error);
+    padding: 0.65rem 1rem;
+    border-radius: var(--g-radius-sm);
+    margin-top: 0.75rem;
+    font-size: 0.85rem;
+    border-left: 3px solid var(--g-error);
+}
+
+.error-banner:not(:empty) {
+    display: block;
+}
+
+/* =====================================================
+   CAMERA CONTROLS — Button row below the viewport
+   ===================================================== */
+.camera-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 1.1rem;
+}
+
+/* =====================================================
+   BUTTONS — Gesture page specific button system
+   ===================================================== */
+.g-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.8rem 1.2rem;
+    border-radius: var(--g-radius-sm);
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 2px solid transparent;
+    white-space: nowrap;
+}
+
+.g-btn-primary {
+    background: linear-gradient(135deg, var(--g-primary) 0%, var(--g-violet) 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(99,102,241,0.35);
+}
+
+.g-btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(99,102,241,0.4);
+}
+
+.g-btn-outline {
+    background: white;
+    border-color: var(--g-border);
+    color: var(--g-muted);
+}
+
+.g-btn-outline:hover:not(:disabled) {
+    background: var(--g-brand-light);
+    border-color: var(--g-primary);
+    color: var(--g-primary);
+}
+
+.g-btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 4px 14px rgba(239,68,68,0.25);
+}
+
+.g-btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+}
+
+.g-btn-toggle-on {
+    background: #f0fdf4;
+    color: var(--g-success);
+    border-color: #bbf7d0;
+}
+
+.g-btn-toggle-off {
+    background: #fef2f2;
+    color: var(--g-error);
+    border-color: #fecaca;
+}
+
+.g-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    filter: grayscale(0.6);
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* =====================================================
+   AUDIO CARD — Speech synthesis toggle
+   ===================================================== */
+.audio-card {
+    padding: 1rem 1.25rem;
+}
+
+.audio-card-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.audio-info {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.audio-icon-wrap {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--g-primary), var(--g-violet));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.audio-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--g-text);
+}
+
+.audio-subtitle {
+    font-size: 0.75rem;
+    color: var(--g-muted);
+    margin-top: 0.1rem;
+}
+
+/* =====================================================
+   TIPS CARD — Quick usage tips
+   ===================================================== */
+.tips-card {
+    padding: 1.1rem 1.25rem;
+    background: linear-gradient(135deg, #fafafa, var(--g-brand-light));
+    border-color: #e0e7ff;
+}
+
+.tips-header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 0.85rem;
+}
+
+.tips-header i {
+    color: var(--g-warning);
+    font-size: 0.95rem;
+}
+
+.tips-header h3 {
+    font-size: 0.9rem;
+    font-weight: 700;
+    margin: 0;
+}
+
+.tips-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+
+.tips-list li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--g-muted);
+}
+
+.tips-list li i {
+    color: var(--g-success);
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+/* =====================================================
+   TRANSLATION CARD — Detected sign + Gujarati output
+   ===================================================== */
+.translation-card {
+    padding-bottom: 1.5rem;
+}
+
+/* Detected sign (English label) panel */
+.detected-sign-panel {
+    background: var(--g-brand-light);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    border: 2px dashed rgba(99,102,241,0.2);
+    transition: all 0.35s ease;
+    position: relative;
+}
+
+.detected-sign-panel.active {
+    background: white;
+    border-style: solid;
+    border-color: var(--g-primary);
+    box-shadow: var(--g-shadow-sm);
+}
+
+.detected-label-meta {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--g-muted);
+    margin-bottom: 0.65rem;
+}
+
+.detected-sign-output {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.detected-icon {
+    color: rgba(99,102,241,0.25);
+    font-size: 2rem;
+    flex-shrink: 0;
+    transition: color 0.3s;
+}
+
+.detected-sign-panel.active .detected-icon {
+    color: var(--g-primary);
+}
+
+/* The prediction label element — ID preserved: #prediction-label */
+#prediction-label {
+    font-family: 'Outfit', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--g-primary);
+    line-height: 1;
+    letter-spacing: -0.02em;
+    text-transform: capitalize;
+}
+
+/* =====================================================
+   GUJARATI OUTPUT PANEL — The key translation panel
+   ===================================================== */
+.gujarati-output-panel {
+    background: var(--g-gj-bg);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem 1.5rem;
+    margin-bottom: 1.25rem;
+    border: 2px solid #ddd6fe;
+    position: relative;
+    min-height: 110px;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.gujarati-output-panel.has-translation {
+    border-color: var(--g-gj-accent);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.08);
+}
+
+.gujarati-label-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.75rem;
+}
+
+.gujarati-script-badge {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--g-gj-accent);
+    background: #ede9fe;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+}
+
+.gujarati-live-tag {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--g-muted);
+}
+
+.mini-pulse {
+    width: 6px;
+    height: 6px;
+    background: var(--g-success);
+    border-radius: 50%;
+    animation: status-pulse 1.5s infinite;
+}
+
+/* Gujarati text output — ID preserved: #gujarati-output */
+#gujarati-output {
+    font-family: 'Noto Sans Gujarati', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--g-gj-accent);
+    line-height: 1.4;
+    display: none; /* shown when translation is present */
+}
+
+#gujarati-output.visible {
+    display: block;
+}
+
+/* Empty state for Gujarati panel */
+.gujarati-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 0.5rem 0;
+    gap: 0.4rem;
+    color: var(--g-muted);
+}
+
+.gujarati-empty-state i {
+    font-size: 1.5rem;
+    color: #c4b5fd;
+}
+
+.gujarati-empty-state p {
+    font-size: 0.85rem;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.gujarati-empty-state.hidden {
+    display: none;
+}
+
+/* =====================================================
+   CONFIDENCE SECTION
+   ===================================================== */
+.confidence-section {
+    padding-top: 0.5rem;
+}
+
+.confidence-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.55rem;
+}
+
+.confidence-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--g-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.confidence-value {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--g-primary);
+}
+
+/* Track and fill — IDs preserved: #confidence-fill */
+.confidence-track {
+    height: 8px;
+    background: rgba(0,0,0,0.06);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+#confidence-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(to right, var(--g-primary), var(--g-violet));
+    border-radius: 999px;
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* =====================================================
+   HISTORY CARD — Recognition Log
+   ===================================================== */
+.history-card {
+    padding-bottom: 1.25rem;
+}
+
+.history-count-badge {
+    margin-left: auto;
+    background: var(--g-brand-light);
+    color: var(--g-primary);
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+}
+
+/* Empty state */
+.history-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--g-muted);
+    gap: 0.5rem;
+}
+
+.history-empty-state i {
+    font-size: 2rem;
+    color: #c4b5fd;
+}
+
+.history-empty-state p {
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.history-empty-state small {
+    font-size: 0.78rem;
+    opacity: 0.8;
+}
+
+.history-empty-state.hidden {
+    display: none;
+}
+
+/* History list */
+.history-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+/* Each history item */
+.history-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #fafafa;
+    border: 1px solid var(--g-border);
+    border-radius: var(--g-radius-sm);
+    animation: slide-in 0.3s ease-out;
+    gap: 0.75rem;
+}
+
+@keyframes slide-in {
+    from { opacity: 0; transform: translateX(8px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.history-sign {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.history-sign i {
+    color: var(--g-primary);
+    font-size: 0.8rem;
+    flex-shrink: 0;
+}
+
+.history-en {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--g-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-gj {
+    font-family: 'Noto Sans Gujarati', sans-serif;
+    font-size: 0.75rem;
+    color: var(--g-gj-accent);
+    font-weight: 600;
+    margin-left: 0.25rem;
+    background: #ede9fe;
+    padding: 0.1rem 0.4rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+}
+
+.history-time {
+    font-size: 0.72rem;
+    color: var(--g-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* =====================================================
+   RESPONSIVE — Tablet and Mobile
+   ===================================================== */
+@media (max-width: 1024px) {
+    .gesture-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    main.container {
+        padding-top: 1rem;
+    }
+
+    .gesture-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .gesture-header-text h1 {
+        font-size: 1.6rem;
+    }
+
+    .camera-controls {
+        grid-template-columns: 1fr;
+    }
+
+    #prediction-label {
+        font-size: 2rem;
+    }
+
+    #gujarati-output {
+        font-size: 1.6rem;
+    }
+}

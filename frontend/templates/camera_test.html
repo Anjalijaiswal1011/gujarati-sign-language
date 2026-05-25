@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Camera Test{% endblock %}
+{% block content %}
+<div style="max-width:600px;margin:2rem auto;padding:2rem;background:white;border-radius:20px;box-shadow:0 10px 40px rgba(0,0,0,0.1);">
+    <h2 style="color:#6366f1;margin-bottom:1rem;">📷 Camera Permission Test</h2>
+    <div id="result" style="padding:1rem;border-radius:10px;margin-bottom:1rem;background:#f0f4ff;font-size:0.9rem;"></div>
+    <video id="v" autoplay playsinline muted style="width:100%;border-radius:12px;background:#000;display:none;"></video>
+    <br><br>
+    <button onclick="testCam()" style="background:#6366f1;color:white;padding:1rem 2rem;border:none;border-radius:12px;font-size:1rem;font-weight:700;cursor:pointer;">
+        Test Camera Access
+    </button>
+</div>
+<script>
+async function testCam() {
+    const r = document.getElementById('result');
+    const v = document.getElementById('v');
+    r.style.background='#fef9c3';
+    r.innerHTML='⏳ Requesting camera...';
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({video:true});
+        v.srcObject = stream;
+        v.style.display='block';
+        r.style.background='#dcfce7';
+        r.innerHTML='✅ <b>Camera works!</b> You can see yourself above. Go back to the gesture page now.';
+    } catch(e) {
+        r.style.background='#fee2e2';
+        if(e.name==='NotAllowedError'){
+            r.innerHTML='🚫 <b>Camera is BLOCKED by Chrome.</b><br><br>Fix it:<br>1. Look at your browser address bar (top)<br>2. Click the 🔒 lock icon or 📷 camera icon<br>3. Set Camera to <b>"Allow"</b><br>4. Click <b>Reload</b> button<br>5. Come back and click Test Camera again';
+        } else if(e.name==='NotFoundError'){
+            r.innerHTML='❌ <b>No camera found!</b> Please plug in a webcam.';
+        } else {
+            r.innerHTML='❌ Error: '+e.name+' — '+e.message;
+        }
+    }
+}
+// Auto-test on load
+window.onload = () => {
+    document.getElementById('result').innerHTML = '👆 Click the button to test your camera';
+    testCam();
+};
+</script>
+{% endblock %}
